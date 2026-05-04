@@ -1,11 +1,8 @@
 #include "user_insert.h"
 
 
-// нужно отличать область ифа и вайла от функции???
-// комбинаия локал и now_func_id < 0 => внутри ифа и вайда!! ==> при инициализации переменных создавать локальные метки
-// добавить обработку вайла и иФА в гет вар
-// правило: глобальные переменные не могут быть вызовом чего-то это сразу число 
 
+//____________________________________________________INIT_VARIA__________________________________________________________________________//
 void Asm_init_varia(Arg_s)
 {
     DE_BUG(leaf);
@@ -108,11 +105,23 @@ void Asm_init_varia(Arg_s)
 
     if(global_or_not == LOCA_L)           // => while/if => local label <(if not func + LOCA_L)> 
     {
-        Asm_expression(fp, val_ue, ast);
+        Asm_expression(fp, val_ue, ast);  
 
-        (ast->num_init_in_block)++;         // тк изначально ноль а надо мин = 1
+//работу со стеком для ифа добавит ь
+        scope_table* stk_for_if_wh = stack_pop(ast->labels_names_for_if_while);
+
+        params_in_scope* name_var_stk = search_info_for_IF_stk(ast, stk_for_if_wh, (char*)nick_name->value.x);
+
+        name_var_stk->offset_in_loca_l = stk_for_if_wh->all_param_s[0].call_number;
+
+
         fprintf(fp, "pop rax\n");           // с каждым новым блоком(if + while) обнулять номер инита
-        fprintf(fp, "mov [rsp + %d], eax    ; go to array on stack <%s>\n", (8 * ast->num_init_in_block), nick_name->value.x);
+        fprintf(fp, "mov [rsp + %d], eax    ; go to array on stack <%s>\n", (8 * name_var_stk->offset_in_loca_l), nick_name->value.x);
+
+
+        (stk_for_if_wh->all_param_s[0].call_number)++;
+
+        stack_push(ast->labels_names_for_if_while, stk_for_if_wh);
     }
     ////////////////////////////////////////
 
@@ -122,10 +131,11 @@ void Asm_init_varia(Arg_s)
 // то есть оффсет для вайлов и ифов также будет 
 // только с доступом через rsp
 }
+//________________________________________________________________________________________________________________________________________//
 
 
-// cdecle style ????
-//___________________________________________VARIA_USE____________________________________________________________________________________//
+
+//_____________________________________________________VARIA_USE__________________________________________________________________________//
 void var_printing(Arg_s)
 {
     DE_BUG(leaf);
@@ -145,14 +155,27 @@ void var_printing(Arg_s)
         return ;
     }
 
+
     if(varia_stk->is_global == GLOBA_L)
         fprintf(fp, "mov eax, dword ptr [rel %s]     ; global param <%s> takes from label\n", name, name);
     
+
     if(varia_stk->is_global == LOCA_L && ast->id_of_now_func > - 1)     // => in func use init
         fprintf(fp, "mov eax, [rbp - %d]            ; local param <%s> eat from stack mem\n", (8 * varia_stk->offset_in_loca_l), name);
 
+
     if(varia_stk->is_global == LOCA_L && ast->id_of_now_func < 0)     // => if/while block
-        fprintf(fp, "mov eax, [rsp + %d]            ; take from local massive <%s>\n", (8 * ast->num_init_in_block), name);
+    {
+        scope_table* stk_for_if_wh = stack_pop(ast->labels_names_for_if_while);
+
+        params_in_scope* name_var_stk = search_info_for_IF_stk(ast, stk_for_if_wh, name);
+
+        // для каждого параметра нужно хранить свое смещение по имени а в нулевой ячейке лежит имя метки и количество используемых инитов для выделения памяти на стеке
+
+        fprintf(fp, "mov eax, [rsp + %d]            ; take from local massive <%s>\n", (8 * name_var_stk->offset_in_loca_l), name);
+    
+        stack_push(ast->labels_names_for_if_while, stk_for_if_wh);
+    }
 
     fprintf(fp, "push rax\n");
     
@@ -184,7 +207,7 @@ params_in_scope* search_in_scope(ar_get, char* name_var)
 
 
 
-//___________________________________________CALL_FUNC____________________________________________________________________________________//
+//_____________________________________________________CALL_FUNC__________________________________________________________________________//
 void func_user_ptinting(Arg_s)
 {
     DE_BUG(leaf);
@@ -200,7 +223,7 @@ void func_user_ptinting(Arg_s)
 
     fprintf(fp, "call %s\n", func_name);
 
-    fprintf(fp, "sub rsp, %d        ; skip push params \n", (8 * func_struct->amount_of_params));
+    fprintf(fp, "add rsp, %d        ; skip push params \n", (8 * func_struct->amount_of_params));
 }
 
 user_func_info* search_user_func(ar_get, char* name_func)
@@ -208,7 +231,7 @@ user_func_info* search_user_func(ar_get, char* name_func)
     AsserT(ast->max_func_user_num == 0, syntax_err, NULL);
 
     for(size_t i = 0; i < ast->max_func_user_num; i++)
-        if(strcmp(name_func, ast->all_func[i].name_of_func))
+        if(strcmp(name_func, ast->all_func[i].name_of_func) == 0)
             return &(ast->all_func[i]);
 
     fprintf(stderr, "func %s is not found\n\n", name_func);
@@ -236,7 +259,7 @@ void Asm_get_args_(Arg_s)
 
 
 
-//_____________________________________________INIT_FUNC__________________________________________________________________________________//
+//_____________________________________________________INIT_FUNC__________________________________________________________________________//
 void user_oper_init(Arg_s)
 {
     DE_BUG(leaf);
@@ -297,7 +320,6 @@ void user_oper_init(Arg_s)
     ast->id_of_now_func = -1;   // -1 = вне функции чтобы не путать с локальностью от ифа и вайла
 }
 
-
 void func_open_space(Le_af leaf, ar_get, int how_much_params)
 {
     DE_BUG(leaf);
@@ -306,26 +328,13 @@ void func_open_space(Le_af leaf, ar_get, int how_much_params)
     // all params in ->left
     // need new steck
 
+    ///////////////COPY_OLD_SCOPE///////////////////
     scope_table* new_space = (scope_table*)calloc((size_t)ast->max_varia_num, sizeof(params_in_scope));
     AsserT(new_space == NULL, memory_aloca, );
 
-    ///////////////COPY_OLD_SCOPE///////////////////
     int i_i = 0;
     if(ast->skope_stack->size == 1) // не может быть больше во время инициализации функции если ноль просто добавляем также как и после этого ифа
-    {
-        scope_table* previous_scope = stack_pop(ast->skope_stack);
-        for( ; previous_scope->all_param_s[i_i].name_of_var != NULL; i_i++)
-        {
-            new_space->all_param_s[i_i].is_global = previous_scope->all_param_s[i_i].is_global;
-            new_space->all_param_s[i_i].name_of_var = previous_scope->all_param_s[i_i].name_of_var;
-            new_space->all_param_s[i_i].call_number = previous_scope->all_param_s[i_i].call_number;
-            new_space->all_param_s[i_i].is_it_func_param = previous_scope->all_param_s[i_i].is_it_func_param;
-        }
-        new_space->is_global = previous_scope->is_global;
-        new_space->num_params = previous_scope->num_params;
-
-        stack_push(ast->skope_stack, previous_scope);
-    }
+        copy_old_scope(ast, new_space, &i_i);
     ///////////////////////////////////////////////
 
     //так как мы не можем инициализировать функцию в других места кроме глобальных значит перекопироваться должеон именно глобальный стек если он есть а если есть только 1 стек то он точно глобальный
@@ -345,5 +354,21 @@ void func_open_space(Le_af leaf, ar_get, int how_much_params)
 
     stack_push(ast->skope_stack, new_space);
     ///////////////////////////////////////////////
+}
+
+void copy_old_scope(ar_get, scope_table* new_space, int *i_i)
+{
+    scope_table* previous_scope = stack_pop(ast->skope_stack);
+    for( ; previous_scope->all_param_s[*i_i].name_of_var != NULL; *i_i++)
+    {
+        new_space->all_param_s[*i_i].is_global = previous_scope->all_param_s[*i_i].is_global;
+        new_space->all_param_s[*i_i].name_of_var = previous_scope->all_param_s[*i_i].name_of_var;
+        new_space->all_param_s[*i_i].call_number = previous_scope->all_param_s[*i_i].call_number;
+        new_space->all_param_s[*i_i].is_it_func_param = previous_scope->all_param_s[*i_i].is_it_func_param;
+    }
+    new_space->is_global = previous_scope->is_global;
+    new_space->num_params = previous_scope->num_params;
+
+    stack_push(ast->skope_stack, previous_scope);
 }
 //________________________________________________________________________________________________________________________________________//

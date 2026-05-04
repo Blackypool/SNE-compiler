@@ -20,5 +20,7 @@ void func_open_space(Le_af leaf, ar_get, int how_much_params);
 
 void Asm_init_varia(Arg_s);
 
+void copy_old_scope(ar_get, scope_table* new_space, int *i_i);
+
 
 #endif

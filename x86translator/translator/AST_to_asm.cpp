@@ -21,7 +21,7 @@
 // функцию ставить после вызова в асм эгозер ифа и вайла при инициализации функцуии все норм тк нельзя инициализировать функцию в функции 
 // если стек области видимости пустой это еще не значит что мы глобал
 
-//____________________________________________START______________________________________________________________________________________//
+//_____________________________________________________START_____________________________________________________________________________//
 int asm_main(ar_get)
 {
     AsserT(ast == NULL, give_null_ptr, give_null_ptr);
@@ -91,7 +91,7 @@ void Asm_expression(Arg_s)          // types
 
 
 
-//____________________________________________DEFAULT_FUNC_______________________________________________________________________________//
+//___________________________________________________DEFAULT_FUNC________________________________________________________________________//
 static struct znaki translet_to_ASM[] = {
 
     {"add", ADD_C},
@@ -174,7 +174,7 @@ void operat_ptinting(Arg_s)
 
 
 
-//___________________________________________NOT_DEF_FUNC_________________________________________________________________________________//
+//___________________________________________________NOT_DEF_FUNC_________________________________________________________________________//
 void Asm_another(FILE* fp, Le_af leaf, ar_get)
 {
     if(leaf == NULL)
@@ -291,14 +291,25 @@ void embezzlement(Arg_s)    // присвоение, хищничество
         return ;
     }
 
+
     if(varia_stk->is_global == GLOBA_L)
         fprintf(fp, "mov dword ptr [rel %s], eax     ; place to global label param <%s>\n", name, name);
     
+
     if(varia_stk->is_global == LOCA_L && ast->id_of_now_func > - 1)     // => in func use init
         fprintf(fp, "mov [rbp - %d], eax             ; place to stack mem <%s>\n", (8 * varia_stk->offset_in_loca_l), name);
 
+
     if(varia_stk->is_global == LOCA_L && ast->id_of_now_func < 0)     // => if/while block
-        fprintf(fp, "mov [rsp + %d], eax             ; place to local massive <%s>\n", (8 * ast->num_init_in_block), name);
+    {
+        scope_table* stk_for_if_wh = stack_pop(ast->labels_names_for_if_while);
+
+        params_in_scope* name_var_stk = search_info_for_IF_stk(ast, stk_for_if_wh, name);
+        
+        fprintf(fp, "mov [rsp + %d], eax             ; place to local massive <%s>\n", (8 * name_var_stk->offset_in_loca_l), name);
+    
+        stack_push(ast->labels_names_for_if_while, stk_for_if_wh);
+    }
     ////////////////////////////////////
 
     free(name);
@@ -307,7 +318,7 @@ void embezzlement(Arg_s)    // присвоение, хищничество
 
 
 
-//_____________________________________________________JUMP_ERS___________________________________________________________________________//
+//____________________________________________________JUMP_ERS____________________________________________________________________________//
 static struct znaki jumpers[] = {
 
     {"je", EQUAL_C},
@@ -346,4 +357,156 @@ void bear_gammy_jump_func(Arg_s)
         if(leaf->value.oper == (size_t)jumpers[i].e_num)
             fprintf(fp, "%s %s\n", jumpers[i].value, label_name);
 }
+//________________________________________________________________________________________________________________________________________//
+
+
+
+//____________________________________________________IF__WHILE___________________________________________________________________________//
+void Asm_if_cmd(Arg_s)
+{
+
+// сначала нужно поставить метку а потом вызвать Asm_expression а то внутри опять ченить вызовется такое и мы потеряе номер метки ? сохранять его
+// возвращть функцией препарейшен надо и сохранять потоом экспрессион а потом все остальное 
+    DE_BUG(leaf);    
+
+    Le_af root_of_if = leaf;
+    char* name_forr_if = preparation_if_while(arg_s);
+    
+    /////////////////CONDITION/////////////////////
+    Asm_expression(fp, root_of_if->left, ast);   
+    ///////////////////////////////////////////////
+
+// сверху произошла обработка кмп
+// значит сейчас обрабатываем елсе 
+// потом ставим метку которые из елса перепрыгиваем и пускаем иф после которого ставим метку на которыую должен прыгнуть елсе а она получается путем снпринтфа с припиской елсе
+
+
+    if(leaf->right->value.oper == ELSE_C)
+    {
+        /////////////////ELSE/////////////////////////
+        char end_of_if_label[120] = {};
+        snprintf(end_of_if_label, sizeof(end_of_if_label), "else_end_%s", name_forr_if);
+
+        fprintf(fp, "; else:\n");
+
+        Asm_expression(fp, leaf->right->right, ast);
+        
+        fprintf(fp, "jmp %s\n", end_of_if_label);
+        ///////////////////////////////////////////////
+
+        /////////////////_IF_//////////////////////////
+        fprintf(fp, "; if:\n");
+
+        Asm_expression(fp, leaf->right->left, ast);
+        
+        fprintf(fp, "%s:\n", end_of_if_label);
+        ///////////////////////////////////////////////
+    }
+    else
+        Asm_expression(fp, leaf->right, ast);
+
+    // копиурем область видимости создаем свою также как в функопенспей 
+    // ставим флаги что мы находимся именно в ифе или вайле - нет не надо уже есть на это логика //
+    // при встрече инита увеличивать смещение 
+    // на старте положить в нулевую ячецку нового стека название, для названий нужна глобальное число чтобы не было повторений 
+    
+// посчитать сколько инитов для инициализации массива на стеке
+
+}
+
+void Asm_while_cmd(Arg_s)
+{
+    DE_BUG(leaf);    
+
+    Le_af root_of_while = leaf;
+    char* name_forr_while = preparation_if_while(arg_s);      
+
+    ///////////////////////////////////////////////
+    char start_of_while_[120] = {};
+    snprintf(start_of_while_, sizeof(start_of_while_), "start_of_while_%s", name_forr_while);
+
+    fprintf(fp, "%s:\n", start_of_while_);
+
+    /////////////////CONDITION/////////////////////
+    Asm_expression(fp, root_of_while->left, ast);   
+    ///////////////////////////////////////////////
+
+
+    /////////////////////BODY//////////////////////
+    Asm_expression(fp, root_of_while->right, ast);   
+    fprintf(fp, "jmp %s", start_of_while_);
+    ///////////////////////////////////////////////
+
+
+    /////////////////////END//////////////////////
+    fprintf(fp, "%s:\n", name_forr_while);
+    ///////////////////////////////////////////////
+}
+//________________________________________________________________________________________________________________________________________//
+
+char* preparation_if_while(Arg_s)
+{
+    DE_BUG(leaf);
+
+    ///////////////COPY_OLD_SCOPE///////////////////
+    scope_table* new_space = (scope_table*)calloc((size_t)ast->max_varia_num, sizeof(params_in_scope));
+    AsserT(new_space == NULL, memory_aloca, );
+
+    int i_i = 0;
+    if(ast->skope_stack->size > 0)
+        copy_old_scope(ast, new_space, &i_i);               // i_i == свободная ячейка для новых параметров для ифа и вайла не надо
+    ///////////////////////////////////////////////
+
+
+    /////////////////INITial_IF/////////////////
+    scope_table* stk_for_if_wh = (scope_table*)calloc((size_t)ast->max_varia_num, sizeof(params_in_scope));
+    AsserT(new_space == NULL, memory_aloca, );
+
+    stk_for_if_wh->all_param_s[0].call_number = 1;          // чтобы не затереть при добавлении в rsp + 8 * call_number
+    
+
+    /////// всего инитов
+    i_i = 0;   
+    Le_af root_of_if = leaf;      
+    how_many_init(root_of_if, &i_i);
+    fprintf(fp, "sub rsp, %d        ; massiva for senyora if / while\n", (8 * i_i));
+    ///////
+
+
+    /////// name label
+    char name_forr_if[120] = {};
+    snprintf(name_forr_if, sizeof(name_forr_if), "label_%d", ast->free_label_for_if);
+
+    stk_for_if_wh->all_param_s[0].name_of_var = strdup(name_forr_if);
+    (ast->free_label_for_if)++;
+    ///////
+
+    stack_push(ast->labels_names_for_if_while, stk_for_if_wh);
+
+    return name_forr_if;
+}
+
+params_in_scope* search_info_for_IF_stk(ar_get, scope_table* stk_for_if_wh, char* name)
+{              // тк в 0 тех инфо об ифе
+    for(size_t i = 1; i < ast->max_func_user_num; i++)
+        if(strcmp(name, stk_for_if_wh->all_param_s[i].name_of_var) == 0)
+            return &(stk_for_if_wh->all_param_s[i]);
+
+    fprintf(stderr, "varia <%s>not found in oblast if / while\n\n", name);
+}
+    
+void how_many_init(Le_af root_of_if, int* count)
+{
+    Le_af next_ik = root_of_if;
+
+    if(root_of_if == NULL)
+        return ;
+
+    if(next_ik->value.oper == IN_IT)
+        (*count)++;
+
+    how_many_init(root_of_if->left, count);
+    how_many_init(root_of_if->right, count);
+}
+
 //________________________________________________________________________________________________________________________________________//

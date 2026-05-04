@@ -17,6 +17,7 @@ Le_af merger(char* argv, struct A_S_T* ast)
     ast->root_of_ast = root;
 
     lego_stack(ast->skope_stack, ast->max_func_user_num);
+    lego_stack(ast->labels_names_for_if_while, ast->max_func_user_num);
     
     free(save_ptr);
 
@@ -30,6 +31,7 @@ Le_af merger(char* argv, struct A_S_T* ast)
 
 void fell_a_root(struct leaf **root)
 {
+    // очситка стеков тоже нужна будет потом
     if(*root != NULL)
     {
         if((*root)->left != NULL)
