@@ -8,7 +8,7 @@
 // при инициализации переменной проверять если стек пустой значит надо каллочить
 // при заходе в скобочки то есть в иф вайл функцию создается новая область видимости которая забирается либо закрывающимися скобками вайла и ифа или при инициализации функции
 
-// правило: глобальные переменные не могут быть вызовом чего-то это сразу число 
+// правило: глобальные переменные не могут быть вызовом чего-то это сразу число == плохо а как же скан како-нибудь ????
 
 // cdecle style ???? надо бы паскаль но это тестами проверим в падлу разбираться ща
 
@@ -412,6 +412,8 @@ void Asm_if_cmd(Arg_s)
     
 // посчитать сколько инитов для инициализации массива на стеке
 
+    scope_table* stk_for_if_wh = stack_pop(ast->labels_names_for_if_while);
+    ast->is_global_now = stk_for_if_wh->all_param_s[0].is_global;
 }
 
 void Asm_while_cmd(Arg_s)
@@ -441,6 +443,9 @@ void Asm_while_cmd(Arg_s)
     /////////////////////END//////////////////////
     fprintf(fp, "%s:\n", name_forr_while);
     ///////////////////////////////////////////////
+
+    scope_table* stk_for_if_wh = stack_pop(ast->labels_names_for_if_while);
+    ast->is_global_now = stk_for_if_wh->all_param_s[0].is_global;
 }
 //________________________________________________________________________________________________________________________________________//
 
@@ -479,6 +484,10 @@ char* preparation_if_while(Arg_s)
 
     stk_for_if_wh->all_param_s[0].name_of_var = strdup(name_forr_if);
     (ast->free_label_for_if)++;
+    ///////
+
+    /////// сохраняем предыдущюю область видимости
+    stk_for_if_wh->all_param_s[0].is_global = ast->is_global_now;
     ///////
 
     stack_push(ast->labels_names_for_if_while, stk_for_if_wh);
