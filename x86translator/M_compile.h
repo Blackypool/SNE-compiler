@@ -98,52 +98,8 @@ struct stk
     int _reikA = 0;
 };
 //________________________________________________________________________________________________________________________________________//
-// в структуре функции хранить количество инитов чтобы складывать их перед сохраненным рсп
-
-// struct table_name
-// {
-//     char* name;
-    
-//     int est_net;
-
-//     size_t size_tabl;
-
-//     int adress;
-
-//     int num_param;
-
-//     table_name* init_params;//массив указателей на перевеменные которые при вызове функции участвуют
-// };
-
-// typedef table_name* tip_lac;
 
 
-
-
-
-
-
-// struct A_S_T
-// {
-//     leaf* tok_mas;
-//     int pose;
-//     int max_pose;
-
-//     stk var_ble_tabl;
-//     int var_num;
-//     int max_num;
-
-//     table_name* userz_func;
-//     int func_num;
-//     int max_func_num;
-//     int init_num;
-
-//     const char* file_name; 
-    
-//     int Glob_Locl;
-
-//     int Adress_next;
-// };
 struct A_S_T
 {
     const char* end_file_name;      
@@ -164,7 +120,11 @@ struct A_S_T
 
     int is_global_now;
 
-    int num_init_in_block;
+    int num_init_in_block;              // плохо для рекурсивного вызова ифа или похуй? один раз юзается да и все вроде надо глянуть
+
+    stk* labels_names_for_if_while;     // стек имен меток для рекурсивного вызова ифа и вайла 
+    
+                                        // будет использоваться та же структура что и для области видимости, но главное имя
 };
 
 
@@ -258,7 +218,6 @@ enum ALL_OPer
     IN_IT = 34,
 };
 
-
 enum errors_
 {
     memory_aloca = 1,
@@ -275,6 +234,7 @@ enum errors_
 
     stack_errorr = 7,
 };
+
 
 //_______________________________________________DE_B_U_G_SS_______________________________________________________________________________//
 
