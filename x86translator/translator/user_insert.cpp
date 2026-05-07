@@ -1,7 +1,6 @@
 #include "user_insert.h"
 
 
-
 //____________________________________________________INIT_VARIA__________________________________________________________________________//
 void Asm_init_varia(Arg_s)
 {
@@ -9,6 +8,7 @@ void Asm_init_varia(Arg_s)
 
     Le_af nick_name = leaf->left->left;
     Le_af val_ue = leaf->left->right;
+
 
     //////////////GL__LO////////////////////
     int global_or_not = ast->is_global_now;
@@ -18,8 +18,13 @@ void Asm_init_varia(Arg_s)
     ///////////////ADD_IN_SCOPE/////////////
     if(ast->skope_stack->size == 0)
     {
-        scope_table* param_array = (scope_table*)calloc(ast->max_varia_num, sizeof(params_in_scope));
+        /////////////////////
+        scope_table* param_array = (scope_table*)calloc(1, sizeof(scope_table));
         AsserT(param_array == NULL, memory_aloca, );
+
+        param_array->all_param_s = (params_in_scope*)calloc(ast->max_varia_num, sizeof(params_in_scope));
+        AsserT(param_array->all_param_s == NULL, memory_aloca, );
+        /////////////////////
 
         param_array->all_param_s[0].is_global = global_or_not;
         param_array->all_param_s[0].name_of_var = strdup(nick_name->value.x);
@@ -46,12 +51,13 @@ void Asm_init_varia(Arg_s)
 
             return ;
         }
-        else    param_array->all_param_s[0].offset_in_loca_l = 0;       // global && if/while == local+<0
-
+        
+        param_array->all_param_s[0].offset_in_loca_l = 0;       // global && if/while == local+<0
         (param_array->num_params)++;
-    }
 
-    if(ast->skope_stack->size > 0)
+        stack_push(ast->skope_stack, param_array);
+    }
+    else
     {
         scope_table* param_array = stack_pop(ast->skope_stack);
 
@@ -75,8 +81,8 @@ void Asm_init_varia(Arg_s)
             // пока все есть сразу обрабатываем печать
             Asm_expression(fp, val_ue, ast);
 
-            fprintf(fp, "pop rax\n");
-            fprintf(fp, "mov [rbp - %d], eax    ; local func param <%s> eat from stack mem\n", (8 * param_array->all_param_s[now_par].offset_in_loca_l), nick_name->value.x);
+            fprintf(fp, "\n       pop rax                ; init ->");
+            fprintf(fp, "\n       mov [rbp - %d], eax    ; local func param <%s> eat from stack mem\n", (8 * param_array->all_param_s[now_par].offset_in_loca_l), nick_name->value.x);
 
             return ;
         }
@@ -93,13 +99,19 @@ void Asm_init_varia(Arg_s)
     ////////////////DO_PARAM////////////////
     if(global_or_not == GLOBA_L)          // => need global metka
     {
-        fprintf(fp, "jmp skip_global_label_%s\n", nick_name->value.x);
+        // обработать отдельно ввод с клавы
+        fprintf(fp, "\n   jmp skip_global_label_%s\n", nick_name->value.x);
 
-        fprintf(fp, "%s:\n", nick_name->value.x);
-        fprintf(fp, "\t.long   %d", val_ue->value.num); 
+        fprintf(fp, "%s:            ; init ->\n", nick_name->value.x);
+        fprintf(fp, "\t.long   %.0lf\n", val_ue->value.num); 
 
-        fprintf(fp, "skip_global_label_%s:\n", nick_name->value.x);
+        fprintf(fp, "   skip_global_label_%s:\n\n", nick_name->value.x);
 
+        Asm_expression(fp, val_ue, ast);
+
+        fprintf(fp, "       pop rax\n");
+        fprintf(fp, "       mov dword ptr [rel %s], eax\n", nick_name->value.x);
+    
         return ;
     }
 
@@ -109,17 +121,22 @@ void Asm_init_varia(Arg_s)
 
 //работу со стеком для ифа добавит ь
         scope_table* stk_for_if_wh = stack_pop(ast->labels_names_for_if_while);
+        int now_init = stk_for_if_wh->all_param_s[0].call_number;
 
-        params_in_scope* name_var_stk = search_info_for_IF_stk(ast, stk_for_if_wh, (char*)nick_name->value.x);
+        params_in_scope* name_var_stk = &(stk_for_if_wh->all_param_s[now_init]);
 
-        name_var_stk->offset_in_loca_l = stk_for_if_wh->all_param_s[0].call_number;
+        name_var_stk->offset_in_loca_l = now_init;
+        name_var_stk->name_of_var = strdup(nick_name->value.x);
+
+        stk_for_if_wh->all_param_s[now_init] = *name_var_stk;
 
 
-        fprintf(fp, "pop rax\n");           // с каждым новым блоком(if + while) обнулять номер инита
-        fprintf(fp, "mov [rsp + %d], eax    ; go to array on stack <%s>\n", (8 * name_var_stk->offset_in_loca_l), nick_name->value.x);
+        fprintf(fp, "\n       pop rax                ; init ->");           // с каждым новым блоком(if + while) обнулять номер инита
+        fprintf(fp, "\n       mov [rsp + %d], eax    ; go to array on stack <%s>\n", (8 * name_var_stk->offset_in_loca_l), nick_name->value.x);
 
 
         (stk_for_if_wh->all_param_s[0].call_number)++;
+        (stk_for_if_wh->num_params)++;
 
         stack_push(ast->labels_names_for_if_while, stk_for_if_wh);
     }
@@ -141,14 +158,14 @@ void var_printing(Arg_s)
     DE_BUG(leaf);
 
     char* name = strdup(leaf->value.x);
-
+    
     params_in_scope* varia_stk = search_in_scope(ast, name);
     AsserT(varia_stk == NULL, error_in_deep, );
-    
+
     if(varia_stk->is_it_func_param == YES_IT_IS)
     {
-        fprintf(fp, "mov eax, [rbp + 16 + %d]       ; take [%d] param = <%s> for func from stack\n", (8 * varia_stk->call_number), (varia_stk->call_number + 1), name);
-        fprintf(fp, "push rax\n");
+        fprintf(fp, "\n     mov eax, [rbp + 16 + %d]       ; take [%d] param = <%s> for func from stack", (8 * varia_stk->call_number), (varia_stk->call_number + 1), name);
+        fprintf(fp, "\n     push rax                       ; var printing\n");
 
         free(name);
 
@@ -157,27 +174,28 @@ void var_printing(Arg_s)
 
 
     if(varia_stk->is_global == GLOBA_L)
-        fprintf(fp, "mov eax, dword ptr [rel %s]     ; global param <%s> takes from label\n", name, name);
+        fprintf(fp, "\n     mov eax, dword ptr [rel %s]     ; global param <%s> takes from label\n", name, name);
     
 
     if(varia_stk->is_global == LOCA_L && ast->id_of_now_func > - 1)     // => in func use init
-        fprintf(fp, "mov eax, [rbp - %d]            ; local param <%s> eat from stack mem\n", (8 * varia_stk->offset_in_loca_l), name);
+        fprintf(fp, "\n     mov eax, [rbp - %d]            ; local param <%s> eat from stack mem\n", (8 * varia_stk->offset_in_loca_l), name);
 
 
     if(varia_stk->is_global == LOCA_L && ast->id_of_now_func < 0)     // => if/while block
     {
         scope_table* stk_for_if_wh = stack_pop(ast->labels_names_for_if_while);
 
-        params_in_scope* name_var_stk = search_info_for_IF_stk(ast, stk_for_if_wh, name);
+        params_in_scope* name_var_stk = search_info_for_IF_stk(ast, stk_for_if_wh, (const char*)name);
+        AsserT(name_var_stk == NULL, error_in_deep, );
 
         // для каждого параметра нужно хранить свое смещение по имени а в нулевой ячейке лежит имя метки и количество используемых инитов для выделения памяти на стеке
 
-        fprintf(fp, "mov eax, [rsp + %d]            ; take from local massive <%s>\n", (8 * name_var_stk->offset_in_loca_l), name);
+        fprintf(fp, "\n     mov eax, [rsp + %d]            ; take from local massive <%s>\n", (8 * name_var_stk->offset_in_loca_l), name);
     
         stack_push(ast->labels_names_for_if_while, stk_for_if_wh);
     }
 
-    fprintf(fp, "push rax\n");
+    fprintf(fp, "\n     push rax\n");
     
     free(name);
 }
@@ -186,20 +204,32 @@ params_in_scope* search_in_scope(ar_get, char* name_var)
 {
     AsserT(ast->skope_stack->size == 0, stack_errorr, NULL);
 
-    scope_table* now_zone = stack_pop(ast->skope_stack);
-
-    for(size_t i = 0; i < now_zone->num_params; i++)
+    ///////////////////IF_WHILE_SCOPE//////////////////
+    for(ssize_t i = ast->labels_names_for_if_while->size - 1; i >= 0 ; i--)
     {
-        if(strcmp(name_var, now_zone->all_param_s[i].name_of_var) == 0)
+        for(size_t k = 0;       (k < ast->labels_names_for_if_while->stack[i]->num_params) && \
+                                (ast->labels_names_for_if_while->stack[i]->all_param_s[k].name_of_var != NULL);     k++)
         {
-            stack_push(ast->skope_stack, now_zone);
-
-            return &(now_zone->all_param_s[i]);
+            if(strcmp(name_var, ast->labels_names_for_if_while->stack[i]->all_param_s[k].name_of_var) == 0)
+                return &(ast->labels_names_for_if_while->stack[i]->all_param_s[k]);
         }
     }
+    //////////////////////////////////////////////////
+
+
+    /////////////////////MAIN_SCOPE///////////////////
+    for(ssize_t i = ast->skope_stack->size - 1; i >= 0 ; i--)
+    {
+        for(size_t k = 0;       (k < ast->skope_stack->stack[i]->num_params) && \
+                                (ast->skope_stack->stack[i]->all_param_s[k].name_of_var != NULL);     k++)
+        {
+            if(strcmp(name_var, ast->skope_stack->stack[i]->all_param_s[k].name_of_var) == 0)
+                return &(ast->skope_stack->stack[i]->all_param_s[k]);
+        }
+    }
+    //////////////////////////////////////////////////
 
     fprintf(stderr, "param %s is not found in scope\n\n", name_var);
-    stack_push(ast->skope_stack, now_zone);
 
     return NULL;
 }
@@ -217,13 +247,21 @@ void func_user_ptinting(Arg_s)
     user_func_info* func_struct = search_user_func(ast, func_name);
     AsserT(func_struct == NULL, error_in_deep, );
 
+
+    stack_push(ast->skope_stack, func_struct->argument_s_for_scope_push);
+
     ////////PUSH_ARGS///////////
-    Asm_get_args_(fp, leaf, ast);
+    Asm_get_args_(fp, leaf->left, ast);
     ////////////////////////////
 
-    fprintf(fp, "call %s\n", func_name);
+    stack_pop(ast->skope_stack);
 
-    fprintf(fp, "add rsp, %d        ; skip push params \n", (8 * func_struct->amount_of_params));
+    fprintf(fp, "call %s\n", func_name);
+    fprintf(fp, "\npop rax           ; забрали ret\n");
+
+    fprintf(fp, "add rsp, %zu        ; skip push params \n", (8 * func_struct->amount_of_params));
+
+    fprintf(fp, "push rax          ; вернули ret in stack\n");
 }
 
 user_func_info* search_user_func(ar_get, char* name_func)
@@ -275,7 +313,7 @@ void user_oper_init(Arg_s)
     Le_af body = connect->right;
 
     ////////////save____func////////////
-    size_t func_id = ast->index_of_last_add_func;
+    int func_id = (int)ast->index_of_last_add_func;
     ast->all_func[func_id].name_of_func = strdup(name_of_func->value.us_op);
     (ast->index_of_last_add_func)++;
 
@@ -285,42 +323,54 @@ void user_oper_init(Arg_s)
 
     ////////////NUM_PARAM///////////////
     Le_af param = connect->left;
-    size_t num_params_in_func = 0;
+    int num_params_in_func = 0;
     while(param != NULL)
     {
-        param = param->left;
         ++num_params_in_func;
+
+        param = param->left;
     }
-    ast->all_func[func_id].amount_of_params = num_params_in_func;
+    ast->all_func[func_id].amount_of_params = (size_t)num_params_in_func;
     ////////////////////////////////////
 
     ////////////обход + иниt функции
-    fprintf(fp, "jmp %s_skip_init\n", name_of_func->value.us_op); 
-    fprintf(fp, "%s:\n", name_of_func->value.us_op);  
+    fprintf(fp, "\n\njmp %s_skip_init\n", name_of_func->value.us_op); 
+
+    fprintf(fp, "\n;===============%s===============cdecle=======\
+                \n\
+                \n;   Entry:      (%zu) param\
+                \n;   Exit:       ret in stack\
+                \n;   Expected:   nothing\
+                \n;   Destr:      ax, may be cx\
+                \n\
+                \n;=====================================================\n\n", ast->all_func[func_id].name_of_func, ast->all_func[func_id].amount_of_params);
+    
+    fprintf(fp, "%s:\n;{\n\n", name_of_func->value.us_op);  
     ////////////
 
     // (
-    func_open_space(connect, ast, num_params_in_func);   //парамс чек
+    ast->all_func[func_id].argument_s_for_scope_push = func_open_space(connect, ast, num_params_in_func);   //парамс чек
+    stack_push(ast->skope_stack, ast->all_func[func_id].argument_s_for_scope_push);
     // )
 
     //////////////////////////////////////prefix func
-    fprintf(fp, "push rbp\n");
-    fprintf(fp, "mov rbp, rsp\n");
+    fprintf(fp, "   push rbp\n");
+    fprintf(fp, "   mov rbp, rsp\n");
     //////////////////////////////////////
 
     //[
     Asm_expression(fp, body, ast);
     //]
 
-    fprintf(fp, "%s_skip_init:\n", name_of_func->value.us_op);  
+    fprintf(fp, "\n;}\n%s_skip_init:\n\n;_____________________________________________________\n\n", name_of_func->value.us_op);  
     
     stack_pop(ast->skope_stack);              //after ret go out see zone          
 
     ////////////////////////////////////
-    ast->id_of_now_func = -1;   // -1 = вне функции чтобы не путать с локальностью от ифа и вайла
+    ast->id_of_now_func = -10;   // -1 = вне функции чтобы не путать с локальностью от ифа и вайла
 }
 
-void func_open_space(Le_af leaf, ar_get, int how_much_params)
+scope_table* func_open_space(Le_af leaf, ar_get, int how_much_params)
 {
     DE_BUG(leaf);
 
@@ -329,13 +379,12 @@ void func_open_space(Le_af leaf, ar_get, int how_much_params)
     // need new steck
 
     ///////////////COPY_OLD_SCOPE///////////////////
-    scope_table* new_space = (scope_table*)calloc((size_t)ast->max_varia_num, sizeof(params_in_scope));
-    AsserT(new_space == NULL, memory_aloca, );
+    scope_table* new_space = (scope_table*)calloc(1, sizeof(scope_table));
+    AsserT(new_space == NULL, memory_aloca, NULL);
 
-    int i_i = 0;
-    if(ast->skope_stack->size == 1) // не может быть больше во время инициализации функции если ноль просто добавляем также как и после этого ифа
-        copy_old_scope(ast, new_space, &i_i);
-    ///////////////////////////////////////////////
+    new_space->all_param_s = (params_in_scope*)calloc(ast->max_varia_num, sizeof(params_in_scope));
+    AsserT(new_space->all_param_s == NULL, memory_aloca, NULL);
+    /////////////////////
 
     //так как мы не можем инициализировать функцию в других места кроме глобальных значит перекопироваться должеон именно глобальный стек если он есть а если есть только 1 стек то он точно глобальный
     
@@ -343,32 +392,17 @@ void func_open_space(Le_af leaf, ar_get, int how_much_params)
     Le_af cur = leaf->left;
     for(int i = 0; i < how_much_params; i++) //добавляем новые элементы инициализированные (внутри) вызова
     {
-        new_space->all_param_s[i_i].is_global = LOCA_L;
-        new_space->all_param_s[i_i].name_of_var = strdup(cur->value.x);
-        new_space->all_param_s[i_i].call_number = i;
-        new_space->all_param_s[i_i].is_it_func_param = YES_IT_IS;
+        new_space->all_param_s[i].is_global = LOCA_L;
+        new_space->all_param_s[i].name_of_var = strdup(cur->value.x);
+        new_space->all_param_s[i].call_number = i;
+        new_space->all_param_s[i].is_it_func_param = YES_IT_IS;
+
+        // ast->all_func[func_id].argument_s.
 
         cur = cur->left;
-        i_i++;
     }
+    new_space->num_params = (size_t)how_much_params;
 
-    stack_push(ast->skope_stack, new_space);
-    ///////////////////////////////////////////////
-}
-
-void copy_old_scope(ar_get, scope_table* new_space, int *i_i)
-{
-    scope_table* previous_scope = stack_pop(ast->skope_stack);
-    for( ; previous_scope->all_param_s[*i_i].name_of_var != NULL; *i_i++)
-    {
-        new_space->all_param_s[*i_i].is_global = previous_scope->all_param_s[*i_i].is_global;
-        new_space->all_param_s[*i_i].name_of_var = previous_scope->all_param_s[*i_i].name_of_var;
-        new_space->all_param_s[*i_i].call_number = previous_scope->all_param_s[*i_i].call_number;
-        new_space->all_param_s[*i_i].is_it_func_param = previous_scope->all_param_s[*i_i].is_it_func_param;
-    }
-    new_space->is_global = previous_scope->is_global;
-    new_space->num_params = previous_scope->num_params;
-
-    stack_push(ast->skope_stack, previous_scope);
+    return new_space;
 }
 //________________________________________________________________________________________________________________________________________//

@@ -67,7 +67,7 @@ struct params_in_scope
 {
     char* name_of_var;      // имена переменных                         // название меток в 0 ячейке в остальном названия инитов внутри ифа        
 
-    size_t is_global;       // к глобальным обращение по меткам         // сохраняем чем было глобал/локал перед вызовом ифа в [0]
+    int is_global;          // к глобальным обращение по меткам         // сохраняем чем было глобал/локал перед вызовом ифа в [0]
 
     int call_number;        // номер параметра при вызове               // количество инитов на данный момент в ифе
 
@@ -85,7 +85,6 @@ struct scope_table
     params_in_scope* all_param_s; // стек с массивом структур на параметры в данной области видимости
 };
 
-// размер стека = колво функций + if + while + 2
 typedef scope_table* tip_lac;
 struct stk
 {
@@ -99,6 +98,20 @@ struct stk
 };
 //________________________________________________________________________________________________________________________________________//
 
+
+
+struct user_func_info
+{
+    size_t amount_of_params;       
+
+    char* name_of_func;
+
+    int now_num_var;    // сколько на данный момент было проинициализировано переменных фнутри структуры чтобы считать оффсеты для доставания локальных переменных из стека 
+    
+    scope_table* argument_s_for_scope_push;
+    //?? mb еще чето
+    // массив с использующимися параметрами в функции короче те что при вызове участвуют
+};
 
 struct A_S_T
 {
@@ -128,20 +141,6 @@ struct A_S_T
 };
 
 
-struct user_func_info
-{
-    size_t amount_of_params;       
-
-    char* name_of_func;
-
-    int now_num_var;    // сколько на данный момент было проинициализировано переменных фнутри структуры чтобы считать оффсеты для доставания локальных переменных из стека 
-    //?? mb еще чето
-    // массив с использующимися параметрами в функции короче те что при вызове участвуют
-};
-
-
-
-
 
 //_________________________________________________ENUM_ES__________________________________________________________________________________//
 enum type_t
@@ -149,7 +148,7 @@ enum type_t
     OPERAT = 1223,
 
     VARIA = 1,
-    
+
     NUMBER = 0,
 
     END_OF_FILE = 333,
@@ -238,7 +237,9 @@ enum errors_
 
 //_______________________________________________DE_B_U_G_SS_______________________________________________________________________________//
 
-#define DE_BUG(leaf) fprintf(stderr, "%s:%d ___ leaf = %s\n\n", __FILE__, __LINE__, translate_r(leaf->type));
+#define DE_BUG(leaf) \
+            // if(leaf != NULL) \
+            //     fprintf(stderr, "%s:%d ___ leaf = %s (%zu)\n\n", __FILE__, __LINE__, translate_r(leaf->value.oper), leaf->type);
 
 
 #define AsserT(what_need, type_err, retern)                                                   \
@@ -303,6 +304,7 @@ enum errors_
 #include "translator/do_and_crash.h"
 #include "translator/AST_to_asm.h"
 #include "translator/user_insert.h"
+#include "translator/logical.h"
 //////////////////////////////////////////////////
 
 #endif

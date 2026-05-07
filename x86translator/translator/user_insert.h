@@ -16,11 +16,9 @@ void Asm_get_args_(Arg_s);
 
 void user_oper_init(Arg_s);
 
-void func_open_space(Le_af leaf, ar_get, int how_much_params);
+scope_table* func_open_space(Le_af leaf, ar_get, int how_much_params);
 
 void Asm_init_varia(Arg_s);
-
-void copy_old_scope(ar_get, scope_table* new_space, int *i_i);
 
 
 #endif

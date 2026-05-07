@@ -16,14 +16,24 @@ Le_af merger(char* argv, struct A_S_T* ast)
     picture_of_root(root, "AST");
     ast->root_of_ast = root;
 
-    lego_stack(ast->skope_stack, ast->max_func_user_num);
-    lego_stack(ast->labels_names_for_if_while, ast->max_func_user_num);
-    
-    free(save_ptr);
+    ////////////////////////////
+    ast->skope_stack = (stk*)calloc(1, sizeof(stk));
+    AsserT(ast->skope_stack == NULL, memory_aloca, NULL);
+
+    ast->labels_names_for_if_while = (stk*)calloc(1, sizeof(stk));
+    AsserT(ast->labels_names_for_if_while == NULL, memory_aloca, NULL);
+
+    lego_stack(ast->skope_stack, (ssize_t)ast->max_func_user_num);
+    lego_stack(ast->labels_names_for_if_while, (ssize_t)ast->max_func_user_num);
 
     ////////////////////////////
-    // need init ast ???????? //
+    ast->all_func = (user_func_info*)calloc(ast->max_func_user_num, sizeof(user_func_info));
+    AsserT(ast->all_func == NULL, memory_aloca, NULL);
     ////////////////////////////
+
+    ast->id_of_now_func = -10;      // чтобы изначально не быть в функции 
+
+    free(save_ptr);
 
     return root;
 }

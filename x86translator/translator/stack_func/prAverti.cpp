@@ -12,7 +12,7 @@ void pr_in_tf(struct stk* data, int /*num_line*/, const char* /*file_n*/)
         schetchik--;
 
         tip_lac shtrih = data->stack[schetchik];
-        fprintf(fp, "stack[%zd] = (%d)\n", schetchik, shtrih);
+        fprintf(fp, "stack[%zd] = (%p)\n", schetchik, shtrih);
     }
 
     fclose(fp);

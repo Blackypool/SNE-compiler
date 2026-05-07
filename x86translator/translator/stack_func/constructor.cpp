@@ -15,7 +15,7 @@ void lego_stack(struct stk* data, ssize_t capacity)
     data->Kana_ = 914;
     data->_reikA = 419;
 
-    data->size = 1;
+    data->size = 0;
 
     double_kanar(data);
 }
