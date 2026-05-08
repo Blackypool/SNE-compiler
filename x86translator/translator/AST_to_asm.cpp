@@ -1,26 +1,6 @@
 #include "AST_to_asm.h"
 
 
-// правило: глобальные переменные не могут быть вызовом чего-то это сразу число == плохо а как же скан како-нибудь ????
-
-// cdecle style ???? надо бы паскаль но это тестами проверим в падлу разбираться ща
-
-// инициализировать изначально глобальную переменную нулем а потом сисколлом вызывать скан который сам потом поменяет по глобальной метке значение данной переменной
-// мб правило что можно либо глобалбными сразу константой либо только скан без выражений типо других
-
-// убрать копи стека и просто серчить по нему всему
-
-// сделать вызов функции по аби
-// добавить выравнивание???
-// почему one = 0???
-// Структура с регистрами и флаг занят/не занят / номер при вызове типа за какой параметр по номеру отвечает
-// gjxtve ytne call?? функция не вызывается в конце почему
-
-// сначала забирать рет значение потом очищать стек от параметров/????
-
-// изменить логику работы с параметрами в ифе/вайле??
-
-
 //_____________________________________________________START_____________________________________________________________________________//
 int asm_main(ar_get)
 {
@@ -31,26 +11,26 @@ int asm_main(ar_get)
     FILE* fp = fopen(ast->end_file_name, "w");
     AsserT(fp == NULL, file_errorr, file_errorr);
 
+    //////////////////START////////////////////////
     fprintf(fp, "section .text\n\n\n");
     fprintf(fp, "global _start\n_start:\n\n");
+    ///////////////////////////////////////////////
 
-    ////////////////////////////
-
+    ///////////////////BODY////////////////////////
     Asm_expression(fp, ast->root_of_ast, ast);
+    ///////////////////////////////////////////////
 
-    ////////////////////////////
-
-    fprintf(fp, "HLT");
-
+    ////////////////////END////////////////////////
+    fprintf(fp, "\n\n; _______________________\n;return 0;\nmov rax, 60\nmov rdi, 0\nsyscall");
     fclose(fp);
+    ///////////////////////////////////////////////
 
     return 1;
 }
 
-void Asm_expression(Arg_s)          // types
+void Asm_expression(Arg_s)
 {
     DE_BUG(leaf);
-
 
     if(leaf == NULL)
         return ;
@@ -58,7 +38,6 @@ void Asm_expression(Arg_s)          // types
     if(leaf->type == Z_NAK && leaf->value.oper == ZAPYTAYA)   
         return ;
     
-
     switch (leaf->type)
     {
         case NUMBER:
@@ -95,15 +74,15 @@ void Asm_expression(Arg_s)          // types
 //___________________________________________________DEFAULT_FUNC________________________________________________________________________//
 static struct znaki translet_to_ASM[] = {
 
-    {"  add", ADD_C},
-    {"  imul", MUL_C},
-    {"  sub", SUB_C},
-    {"  idiv", DIV_C},
+    {"        add", ADD_C},
+    {"        imul", MUL_C},
+    {"        sub", SUB_C},
+    {"        idiv", DIV_C},
 
     {"call pow_func\n", POW_C},     // добавить через инклуд как и принтф
 
-    {"  and", LOG_AND},     
-    {"  or", LOG_OR},     
+    {"        and", LOG_AND},     
+    {"        or", LOG_OR},     
 
 };
 
@@ -133,14 +112,15 @@ void operat_ptinting(Arg_s)
         return ;
     }
 
+
     Asm_expression(fp, leaf->left, ast);
     Asm_expression(fp, leaf->right, ast);
 
     
-    if(strcmp(command, "call pow_func\n") == 0)    // параметры для функции уже в стеке
+    if(strcmp(command, "call pow_func\n") == 0)
     {
-        fprintf(fp, "       pop rsi\n");     //  - степень
-        fprintf(fp, "       pop rdi\n");     // - что возводим  
+        fprintf(fp, "       pop rsi\n");            //  - степень
+        fprintf(fp, "       pop rdi\n");            //  - что возводим  
 
         fprintf(fp, "       %s\n", command);
 
@@ -166,7 +146,6 @@ void operat_ptinting(Arg_s)
 
 
     fprintf(fp, "       %s eax, ecx\n", command);
-
     fprintf(fp, "       push rax\n");
 
     return ; 
@@ -178,6 +157,8 @@ void operat_ptinting(Arg_s)
 //___________________________________________________NOT_DEF_FUNC_________________________________________________________________________//
 void Asm_another(FILE* fp, Le_af leaf, ar_get)
 {
+    DE_BUG(leaf);
+
     if(leaf == NULL)
         return ;
 
@@ -203,12 +184,15 @@ void Asm_another(FILE* fp, Le_af leaf, ar_get)
 
             case RET_C:
             {
-                Asm_expression(fp, leaf->left, ast);        // чтобы можно было возвращать выражения
+                Asm_expression(fp, leaf->left, ast);
+                
+                if(ast->id_of_now_func > -1)
+                    fprintf(fp, "\n    pop rax\n");
 
-                if(ast->id_of_now_func != 0) // => leave from func
-                    fprintf(fp, "pop rbp\n");
+                fprintf(fp, "\n    mov rsp, rbp");
+                fprintf(fp, "\n    pop rbp\n\n");
 
-                fprintf(fp, "ret\n");
+                fprintf(fp, "    ret\n");
             }
             break;
 
@@ -270,48 +254,90 @@ void embezzlement(Arg_s)    // присвоение, хищничество
     DE_BUG(leaf);
 
     char* name = strdup(leaf->left->value.x);
-    // проверяем на есть ли вообще в области видимости такой элемент и достаем информацию о нем     
-    // потом юзаем асм экспрессион для правого борта и сохраняем по достанному адремсу из структуры параметра 
 
     params_in_scope* varia_stk = search_in_scope(ast, name);
     AsserT(varia_stk == NULL, error_in_deep, );
+
     ////////////////////////////////////
-
-    Asm_expression(fp, leaf->right, ast);   // in stack value of varia
-
+    Asm_expression(fp, leaf->right, ast);
     fprintf(fp, "       pop rax\n");
-
     ////////////////////////////////////
+
     if(varia_stk->is_it_func_param == YES_IT_IS)
     {
-        fprintf(fp, "       mov [rbp + 16 + %d], eax       ; place to [%d] param = <%s> for func from stack\n", (8 * varia_stk->call_number), (varia_stk->call_number + 1), name);
+        fprintf(fp, "\n        mov [rbp + 8 + %d], eax        ; take [%d] param = <%s> for func from stack", (8 * varia_stk->call_number), (varia_stk->call_number + 1), name);
 
         free(name);
 
         return ;
     }
 
-
     if(varia_stk->is_global == GLOBA_L)
-        fprintf(fp, "       mov dword ptr [rel %s], eax     ; place to global label param <%s>\n", name, name);
-    
-
-    if(varia_stk->is_global == LOCA_L && ast->id_of_now_func > - 1)     // => in func use init
-        fprintf(fp, "       mov [rbp - %d], eax             ; place to stack mem <%s>\n", (8 * varia_stk->offset_in_loca_l), name);
-
-
-    if(varia_stk->is_global == LOCA_L && ast->id_of_now_func < 0)     // => if/while block
     {
-        scope_table* stk_for_if_wh = stack_pop(ast->labels_names_for_if_while);
-
-        params_in_scope* name_var_stk = search_info_for_IF_stk(ast, stk_for_if_wh, (const char*)name);
-        
-        fprintf(fp, "       mov [rsp + %d], eax             ; place to local massive <%s>\n", (8 * name_var_stk->offset_in_loca_l), name);
-    
-        stack_push(ast->labels_names_for_if_while, stk_for_if_wh);
+        fprintf(fp, "\n        lea rbx, [rip + %s]        ; global param <%s> takes from label", name, name);
+        fprintf(fp, "\n        mov dword ptr [rbx], eax\n");
     }
-    ////////////////////////////////////
-
+    else                    // func + gl_if
+        fprintf(fp, "\n        mov [rbp - 8 - %d], eax        ; local param <%s> eat from stack mem\n", (8 * varia_stk->offset_in_loca_l), name);
+    
     free(name);
 }
 //________________________________________________________________________________________________________________________________________//
+
+
+
+
+
+
+// bp, sp
+// ax, cx = operat / ret / all 
+// bx / r8 = for align
+
+// одновременный принтф в бинарник и насм
+// Сохранять последний код инструкции чтобы если уже был пуш не делать его еще ра
+
+
+// //____________________________________________________STANDART___________________________________________________________________________//
+// static struct include_func include[] = {
+
+//     {"M_printf_s", PRINT_F, 0},
+//     {"scan      ", SCAN_C, 0},
+//     {"sqrt      ", SQRT_C, 0},
+//     {"M_strcmp_",  STR_CMP_C, 0},
+    
+// };
+// // section .data
+// // ; jt:
+// //     align 8
+// //  Springboard:
+// //     dq M_printf_s
+// //     dq scan     
+// //     dq sqrt     
+// //     dq M_strcmp_  
+
+
+// // lea rsi, [rel Springboard]  ; rsi = offset+ip = full adr of jt 
+
+// // jmp [rsi + 8 * (rax)] ; jt
+
+
+// int search_num_in_jt(int enum_of_need)  // возвращает номер в структуре, он же джамп и тп
+// {
+//     size_t num_of_include = sizeof(include) / sizeof(include[0]);
+
+//     for(int i = 0; i < (int)num_of_include; i++)
+//         if(enum_of_need == include[i].e_num)
+//             return i;
+
+//     fprintf(stderr, "\nFunc that u want is now include == %s:%d", __FILE__, __LINE__);
+//     return -1;
+// }
+// //_______________________________________________________________________________________________________________________________________//
+
+// //____________________________________________________FOR_ABI____________________________________________________________________________//
+
+// // сделать вызов функции по аби - только у стандартных
+// // добавить выравнивание
+// // Структура с регистрами для АБИ
+
+// //_______________________________________________________________________________________________________________________________________//

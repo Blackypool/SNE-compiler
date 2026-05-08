@@ -61,6 +61,14 @@ struct znaki
 extern struct znaki com_transl[];
 extern const size_t znaki_struct_size;
 
+struct include_func
+{
+    const char* value;
+
+    int e_num;
+
+    int is_use_in_program;
+};
 
 //______________________________________________________SCOPE______________________________________________________________________________//
 struct params_in_scope
@@ -69,11 +77,11 @@ struct params_in_scope
 
     int is_global;          // к глобальным обращение по меткам         // сохраняем чем было глобал/локал перед вызовом ифа в [0]
 
-    int call_number;        // номер параметра при вызове               // количество инитов на данный момент в ифе
+    int call_number;        // номер параметра при вызове               
 
-    int is_it_func_param;   // параметр функции?                        // ski[]
+    int is_it_func_param;   // параметр функции?                      
 
-    int offset_in_loca_l;   // чтобы доставть инит параметры из стека   // для ифа аналогично
+    int offset_in_loca_l;   // чтобы доставть инит параметры из стека
 };
 
 struct scope_table
@@ -102,15 +110,14 @@ struct stk
 
 struct user_func_info
 {
-    size_t amount_of_params;       
+    size_t amount_of_params;       // колво параметров
 
     char* name_of_func;
 
+                        // при заходе в функцию все переменные подчиняются нау_нам_вар абсолютно все / при ините в функции выдавать именно этот параметр 
     int now_num_var;    // сколько на данный момент было проинициализировано переменных фнутри структуры чтобы считать оффсеты для доставания локальных переменных из стека 
     
     scope_table* argument_s_for_scope_push;
-    //?? mb еще чето
-    // массив с использующимися параметрами в функции короче те что при вызове участвуют
 };
 
 struct A_S_T
@@ -133,11 +140,11 @@ struct A_S_T
 
     int is_global_now;
 
-    // int num_init_in_block;              // плохо для рекурсивного вызова ифа или похуй? один раз юзается да и все вроде надо глянуть
-
     stk* labels_names_for_if_while;     // стек имен меток для рекурсивного вызова ифа и вайла 
     
-    int free_label_for_if;              // будет использоваться та же структура что и для области видимости, но главное имя
+    int free_label_for_if;              // номер свободной метки для ифа
+
+    int num_init_in_gl_if;              // номер инита в ифе который в глобале, обнуляется при выходе оттуда
 };
 
 
@@ -215,6 +222,8 @@ enum ALL_OPer
     
     RAVNO = 33,     
     IN_IT = 34,
+
+    STR_CMP_C = 35,
 };
 
 enum errors_
@@ -234,12 +243,16 @@ enum errors_
     stack_errorr = 7,
 };
 
+enum registers
+{
+    //???
+};
 
 //_______________________________________________DE_B_U_G_SS_______________________________________________________________________________//
 
 #define DE_BUG(leaf) \
-            // if(leaf != NULL) \
-            //     fprintf(stderr, "%s:%d ___ leaf = %s (%zu)\n\n", __FILE__, __LINE__, translate_r(leaf->value.oper), leaf->type);
+            if(leaf != NULL) \
+                fprintf(stderr, "%s:%d ___ leaf = %s (%zu)\n\n", __FILE__, __LINE__, translate_r(leaf->value.oper), leaf->type);
 
 
 #define AsserT(what_need, type_err, retern)                                                   \

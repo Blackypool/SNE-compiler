@@ -31,7 +31,7 @@ Le_af merger(char* argv, struct A_S_T* ast)
     AsserT(ast->all_func == NULL, memory_aloca, NULL);
     ////////////////////////////
 
-    ast->id_of_now_func = -10;      // чтобы изначально не быть в функции 
+    ast->id_of_now_func = -123;      // чтобы изначально не быть в функции 
 
     free(save_ptr);
 

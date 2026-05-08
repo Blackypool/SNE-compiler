@@ -12,9 +12,9 @@ void Asm_while_cmd(Arg_s);
 
 char* preparation_if_while(Arg_s);
 
-params_in_scope* search_info_for_IF_stk(ar_get, scope_table* stk_for_if_wh, const char* name);
-
 void how_many_init(Le_af root_of_if, int* count);
+
+void last_word_from_if_wh(Arg_s, char* label_name);
 
 
 #endif
