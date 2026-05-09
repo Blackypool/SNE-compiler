@@ -6,54 +6,49 @@ _start:
 
 
 ;_________INIT_two______________
-   jmp skip_global_label_two
- two:            ; init ->
-	.long   2
 
       mov rax, 2      ; push number
       push rax
 
-   pop rax
-   mov dword ptr [rel two], eax
-   skip_global_label_two:
+      pop rax
+
+   lea rcx, [rip + two]        ; global param <two> takes from label
+   mov dword ptr [rcx], eax
 ;_________________________________________
 
 
 ;_________INIT_zero______________
-   jmp skip_global_label_zero
- zero:            ; init ->
-	.long   0
 
       mov rax, 0      ; push number
       push rax
 
-   pop rax
-   mov dword ptr [rel zero], eax
-   skip_global_label_zero:
+      pop rax
+
+   lea rcx, [rip + zero]        ; global param <zero> takes from label
+   mov dword ptr [rcx], eax
 ;_________________________________________
 
 
 ;_________INIT_one______________
-   jmp skip_global_label_one
- one:            ; init ->
-	.long   0
 
-      lea rbx, [rip + two]        ; global param <two> takes from label
-      mov eax, dword ptr [rbx]
+      lea rcx, [rip + two]        ; global param <two> takes from label
+      mov eax, dword ptr [rcx]
 
       push rax
 
-      lea rbx, [rip + two]        ; global param <two> takes from label
-      mov eax, dword ptr [rbx]
+      lea rcx, [rip + two]        ; global param <two> takes from label
+      mov eax, dword ptr [rcx]
 
       push rax
       pop rcx
       pop rax
-            idiv eax, ecx
+      cdq
+      idiv ecx
       push rax
-   pop rax
-   mov dword ptr [rel one], eax
-   skip_global_label_one:
+      pop rax
+
+   lea rcx, [rip + one]        ; global param <one> takes from label
+   mov dword ptr [rcx], eax
 ;_________________________________________
 
 
@@ -78,8 +73,8 @@ fact_func:
       mov eax, [rbp + 8 + 0]        ; take [1] param = <num> for func from stack
       push rax                       ; var printing
 
-      lea rbx, [rip + one]        ; global param <one> takes from label
-      mov eax, dword ptr [rbx]
+      lea rcx, [rip + one]        ; global param <one> takes from label
+      mov eax, dword ptr [rcx]
 
       push rax
 
@@ -98,13 +93,13 @@ fact_func:
       mov eax, [rbp + 8 + 0]        ; take [1] param = <num> for func from stack
       push rax                       ; var printing
 
-      lea rbx, [rip + one]        ; global param <one> takes from label
-      mov eax, dword ptr [rbx]
+      lea rcx, [rip + one]        ; global param <one> takes from label
+      mov eax, dword ptr [rcx]
 
       push rax
       pop rcx
       pop rax
-            sub eax, ecx
+      sub eax, ecx
       push rax
 
    pop rax                ; init ->
@@ -125,7 +120,7 @@ fact_func:
       push rax                       ; var printing
       pop rcx
       pop rax
-            imul eax, ecx
+      imul eax, ecx
       push rax
       pop rax
 
@@ -147,8 +142,8 @@ fact_func:
       mov eax, [rbp + 8 + 0]        ; take [1] param = <num> for func from stack
       push rax                       ; var printing
 
-      lea rbx, [rip + zero]        ; global param <zero> takes from label
-      mov eax, dword ptr [rbx]
+      lea rcx, [rip + zero]        ; global param <zero> takes from label
+      mov eax, dword ptr [rcx]
 
       push rax
 
@@ -162,18 +157,18 @@ fact_func:
  label_1:        ; if:
 
 
-      lea rbx, [rip + one]        ; global param <one> takes from label
-      mov eax, dword ptr [rbx]
+      lea rcx, [rip + one]        ; global param <one> takes from label
+      mov eax, dword ptr [rcx]
 
       push rax
 
-      lea rbx, [rip + two]        ; global param <two> takes from label
-      mov eax, dword ptr [rbx]
+      lea rcx, [rip + two]        ; global param <two> takes from label
+      mov eax, dword ptr [rcx]
 
       push rax
       pop rcx
       pop rax
-            sub eax, ecx
+      sub eax, ecx
       push rax
 
    pop rax
@@ -186,8 +181,8 @@ fact_func:
     ;______________
 
 
-      lea rbx, [rip + one]        ; global param <one> takes from label
-      mov eax, dword ptr [rbx]
+      lea rcx, [rip + one]        ; global param <one> takes from label
+      mov eax, dword ptr [rcx]
 
       push rax
 
@@ -205,36 +200,32 @@ fact_func_skip_init:
 
 
 ;_________INIT_need______________
-   jmp skip_global_label_need
- need:            ; init ->
-	.long   0
 
 
  call scan
 
-   pop rax
-   mov dword ptr [rel need], eax
-   skip_global_label_need:
+      pop rax
+
+   lea rcx, [rip + need]        ; global param <need> takes from label
+   mov dword ptr [rcx], eax
 ;_________________________________________
 
 
 ;_________INIT_samFactor______________
-   jmp skip_global_label_samFactor
- samFactor:            ; init ->
-	.long   0
 
  ;_______FUNC_USE_____
-      lea rbx, [rip + need]        ; global param <need> takes from label
-      mov eax, dword ptr [rbx]
+      lea rcx, [rip + need]        ; global param <need> takes from label
+      mov eax, dword ptr [rcx]
 
       push rax
    call fact_func
    add rsp, 8        ; skip push params 
    push rax            ; вернули ret in stack
  ;____________________
-   pop rax
-   mov dword ptr [rel samFactor], eax
-   skip_global_label_samFactor:
+      pop rax
+
+   lea rcx, [rip + samFactor]        ; global param <samFactor> takes from label
+   mov dword ptr [rcx], eax
 ;_________________________________________
 
 
@@ -248,3 +239,20 @@ fact_func_skip_init:
 mov rax, 60
 mov rdi, 0
 syscall
+
+.section .data
+
+two:
+	.long   2
+
+zero:
+	.long   0
+
+one:
+	.long   0
+
+need:
+	.long   0
+
+samFactor:
+	.long   0

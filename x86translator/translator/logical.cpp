@@ -63,7 +63,7 @@ void Asm_if_cmd(Arg_s)
 
 
     /////////////////////END//////////////////////
-    char end_of_if_label[120] = {};
+    char end_of_if_label[128] = {};
     snprintf(end_of_if_label, sizeof(end_of_if_label), "else_end_%s", name_forr_if);
     //////////////////////////////////////////////
 
@@ -115,7 +115,7 @@ void Asm_while_cmd(Arg_s)
 
 
     ///////////////////START//////////////////////
-    char start_of_while_[120] = {};
+    char start_of_while_[128] = {};
     snprintf(start_of_while_, sizeof(start_of_while_), "start_of_while_%s", name_forr_while);
     fprintf(fp, " %s:\n", start_of_while_);
     ///////////////////////////////////////////////
@@ -167,7 +167,7 @@ char* preparation_if_while(Arg_s)
 
     
     //////////////////LABEL_NAME///////////////////
-    char name_forr_if[120] = {};
+    char name_forr_if[128] = {};
     snprintf(name_forr_if, sizeof(name_forr_if), "label_%d", ast->free_label_for_if);
     (ast->free_label_for_if)++;
 

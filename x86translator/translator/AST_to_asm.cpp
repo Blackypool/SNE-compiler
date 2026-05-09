@@ -1,17 +1,24 @@
 #include "AST_to_asm.h"
 
 
+// глобальные в сектион .data то есть делать дфух проходку? в первый проход делать асм экспрессион
+// чтобы вычислить значение глобальной переменной а потоь в самом конце в секции .data объявлять их
+
+// просто делать не пуш а сохранть в свободный регистр, если свободных нету значит в стек и включать флаг что забираем из стека 
+// а если забрать из регистра то в обратном порядке просто
+
+
 //_____________________________________________________START_____________________________________________________________________________//
 int asm_main(ar_get)
 {
     AsserT(ast == NULL, give_null_ptr, give_null_ptr);
 
-    ast->is_global_now = GLOBA_L;
-
     FILE* fp = fopen(ast->end_file_name, "w");
     AsserT(fp == NULL, file_errorr, file_errorr);
 
     //////////////////START////////////////////////
+    ast->is_global_now = GLOBA_L;
+
     fprintf(fp, "section .text\n\n\n");
     fprintf(fp, "global _start\n_start:\n\n");
     ///////////////////////////////////////////////
@@ -22,8 +29,16 @@ int asm_main(ar_get)
 
     ////////////////////END////////////////////////
     fprintf(fp, "\n\n; _______________________\n;return 0;\nmov rax, 60\nmov rdi, 0\nsyscall");
-    fclose(fp);
     ///////////////////////////////////////////////
+
+    ////////////////////DATA///////////////////////
+    fprintf(fp, "\n\n.section .data\n");
+    for(size_t i = 0; i < ast->max_varia_num; i++)
+        if(ast->section_data[i] != NULL)
+            fprintf(fp, "%s", ast->section_data[i]);
+    ///////////////////////////////////////////////
+
+    fclose(fp);
 
     return 1;
 }
@@ -74,15 +89,15 @@ void Asm_expression(Arg_s)
 //___________________________________________________DEFAULT_FUNC________________________________________________________________________//
 static struct znaki translet_to_ASM[] = {
 
-    {"      add", ADD_C},
-    {"      imul", MUL_C},
-    {"      sub", SUB_C},
-    {"      idiv", DIV_C},
+    {"add", ADD_C},
+    {"imul", MUL_C},
+    {"sub", SUB_C},
+    {"idiv", DIV_C},
 
     {"call pow_func\n", POW_C},     // добавить через инклуд как и принтф
 
-    {"      and", LOG_AND},     
-    {"      or", LOG_OR},     
+    {"and", LOG_AND},     
+    {"or", LOG_OR},     
 
 };
 
@@ -274,8 +289,8 @@ void embezzlement(Arg_s)    // присвоение, хищничество
 
     if(varia_stk->is_global == GLOBA_L)
     {
-        fprintf(fp, "\n      lea rbx, [rip + %s]        ; global param <%s> takes from label", name, name);
-        fprintf(fp, "\n      mov dword ptr [rbx], eax\n");
+        fprintf(fp, "\n      lea rcx, [rip + %s]        ; global param <%s> takes from label", name, name);
+        fprintf(fp, "\n      mov dword ptr [rcx], eax\n");
     }
     else                    // func + gl_if
         fprintf(fp, "\n      mov [rbp - 8 - %d], eax        ; local param <%s> eat from stack mem\n", (8 * varia_stk->offset_in_loca_l), name);

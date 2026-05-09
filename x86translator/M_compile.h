@@ -145,6 +145,9 @@ struct A_S_T
     int free_label_for_if;              // номер свободной метки для ифа
 
     int num_init_in_gl_if;              // номер инита в ифе который в глобале, обнуляется при выходе оттуда
+    
+    char** section_data;                // для сохранения глобальных переменных в дате а не посередине тиэксти
+    int n_omer_real_global_for_data_sec;// для хранения строк для печати
 };
 
 
@@ -251,8 +254,8 @@ enum registers
 //_______________________________________________DE_B_U_G_SS_______________________________________________________________________________//
 
 #define DE_BUG(leaf) \
-            if(leaf != NULL) \
-                fprintf(stderr, "%s:%d ___ leaf = %s (%zu)\n\n", __FILE__, __LINE__, translate_r(leaf->value.oper), leaf->type);
+            // if(leaf != NULL) \
+            //     fprintf(stderr, "%s:%d ___ leaf = %s (%zu)\n\n", __FILE__, __LINE__, translate_r(leaf->value.oper), leaf->type);
 
 
 #define AsserT(what_need, type_err, retern)                                                   \

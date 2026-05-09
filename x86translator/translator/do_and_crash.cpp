@@ -2,21 +2,27 @@
 
 Le_af merger(char* argv, struct A_S_T* ast)
 {
+    ////////FILE_NAMES//////////
     char name_of_file[120] = {};
     snprintf(name_of_file, sizeof(name_of_file), "programs/%s.txt", argv);
 
     char tree_asm_name[150] = {};
     snprintf(tree_asm_name, sizeof(tree_asm_name), "A_skompile_result/%s.asm", argv);
     ast->end_file_name = tree_asm_name;
+    ////////////////////////////
 
+
+    /////////DO_AST/////////////
     char* tree_txt = file__read(name_of_file);  //прочитали файл + init num varioa and func
     char* save_ptr = tree_txt;
 
     Le_af root = create_base(&tree_txt, ast);   //создали дерево по файлу
     picture_of_root(root, "AST");
     ast->root_of_ast = root;
-
     ////////////////////////////
+
+
+    //////DOUBLE_STACK//////////
     ast->skope_stack = (stk*)calloc(1, sizeof(stk));
     AsserT(ast->skope_stack == NULL, memory_aloca, NULL);
 
@@ -25,13 +31,23 @@ Le_af merger(char* argv, struct A_S_T* ast)
 
     lego_stack(ast->skope_stack, (ssize_t)ast->max_func_user_num);
     lego_stack(ast->labels_names_for_if_while, (ssize_t)ast->max_func_user_num);
-
     ////////////////////////////
+
+
+    ///////////FUNC/////////////
     ast->all_func = (user_func_info*)calloc(ast->max_func_user_num, sizeof(user_func_info));
     AsserT(ast->all_func == NULL, memory_aloca, NULL);
-    ////////////////////////////
 
     ast->id_of_now_func = -123;      // чтобы изначально не быть в функции 
+    ////////////////////////////
+
+
+    ////////////DATA////////////
+    ast->section_data = (char**)calloc(ast->max_varia_num, sizeof(*ast->section_data));
+    AsserT(ast->section_data == NULL, memory_aloca, NULL);
+
+    ast->n_omer_real_global_for_data_sec = 0;
+    ////////////////////////////
 
     free(save_ptr);
 

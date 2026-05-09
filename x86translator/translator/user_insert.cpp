@@ -15,7 +15,7 @@ void Asm_init_varia(Arg_s)
     ////////////////////////////////////////
 
     size_t now_par = 0;
-
+    const char* name_of_var = nick_name->value.x;
     scope_table* param_array = NULL;
 
     ///////////////ADD_IN_SCOPE/////////////
@@ -56,7 +56,7 @@ void Asm_init_varia(Arg_s)
 
     ////////////////////////////////////////
     param_array->all_param_s[now_par].is_global = global_or_not;
-    param_array->all_param_s[now_par].name_of_var = strdup(nick_name->value.x);
+    param_array->all_param_s[now_par].name_of_var = strdup(name_of_var);
     param_array->all_param_s[now_par].is_it_func_param = NO_ITS_NO;   // тк init != func(a,b);
     param_array->all_param_s[now_par].call_number = 0;                // не имеет отношения к параметрам
 
@@ -68,25 +68,29 @@ void Asm_init_varia(Arg_s)
     ////////////////DO_PARAM////////////////
     if(global_or_not == GLOBA_L)          // => need global metka
     {
-        fprintf(fp, "\n;_________INIT_%s______________\n", nick_name->value.x);
-        fprintf(fp, "   jmp skip_global_label_%s\n", nick_name->value.x);
-
-        ///////////////////////
-        fprintf(fp, " %s:            ; init ->\n", nick_name->value.x);
-        fprintf(fp, "\t.long   %.0lf\n", val_ue->value.num); 
+        fprintf(fp, "\n;_________INIT_%s______________\n", name_of_var);
 
         Asm_expression(fp, val_ue, ast);
+        fprintf(fp, "      pop rax\n");
 
-        fprintf(fp, "   pop rax\n");
-        fprintf(fp, "   mov dword ptr [rel %s], eax\n", nick_name->value.x);
-        ///////////////////////
+        fprintf(fp, "\n   lea rcx, [rip + %s]        ; global param <%s> takes from label", name_of_var, name_of_var);
+        fprintf(fp, "\n   mov dword ptr [rcx], eax\n");
 
-        fprintf(fp, "   skip_global_label_%s:\n", nick_name->value.x);
         fprintf(fp, ";_________________________________________\n\n");
+
+        //////////FOR_DATA/////////////
+        char name_for_global[128] = {};
+        snprintf(name_for_global, sizeof(name_for_global), "\n%s:\n\t.long   %.0lf\n", name_of_var, val_ue->value.num); 
+
+        ast->section_data[ast->n_omer_real_global_for_data_sec] = strdup(name_for_global);
+        AsserT(ast->section_data[ast->n_omer_real_global_for_data_sec] == NULL, memory_aloca, );
+
+        (ast->n_omer_real_global_for_data_sec)++;
+        ///////////////////////////////
     }
     else                                  // => just place in stack
     {
-        fprintf(fp, "\n ;_________INIT_%s______________\n", nick_name->value.x);
+        fprintf(fp, "\n ;_________INIT_%s______________\n", name_of_var);
 
         ///////////////////////
         Asm_expression(fp, val_ue, ast);  
@@ -126,8 +130,8 @@ void var_printing(Arg_s)
 
     if(varia_stk->is_global == GLOBA_L)
     {
-        fprintf(fp, "\n      lea rbx, [rip + %s]        ; global param <%s> takes from label", name, name);
-        fprintf(fp, "\n      mov eax, dword ptr [rbx]\n");
+        fprintf(fp, "\n      lea rcx, [rip + %s]        ; global param <%s> takes from label", name, name);
+        fprintf(fp, "\n      mov eax, dword ptr [rcx]\n");
     }
     else                    // func + gl_if
         fprintf(fp, "\n      mov eax, [rbp - 8 - %d]        ; local param <%s> eat from stack mem\n", (8 * varia_stk->offset_in_loca_l), name);
