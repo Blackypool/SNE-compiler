@@ -41,8 +41,8 @@ void Asm_expression(Arg_s)
     switch (leaf->type)
     {
         case NUMBER:
-            fprintf(fp, "\n   mov rax, %.0lf      ; push number", leaf->value.num);
-            fprintf(fp, "\n   push rax\n\n");
+            fprintf(fp, "\n      mov rax, %.0lf      ; push number", leaf->value.num);
+            fprintf(fp, "\n      push rax\n\n");
         break;
 
         case VARIA:
@@ -63,7 +63,7 @@ void Asm_expression(Arg_s)
         break;
 
         default:
-            fprintf(stderr, "\n Asm_expression case ruined\n\n");
+            fprintf(stderr, "\nAsm_expression case ruined\n\n");
         break;
     }
 }
@@ -74,15 +74,15 @@ void Asm_expression(Arg_s)
 //___________________________________________________DEFAULT_FUNC________________________________________________________________________//
 static struct znaki translet_to_ASM[] = {
 
-    {"        add", ADD_C},
-    {"        imul", MUL_C},
-    {"        sub", SUB_C},
-    {"        idiv", DIV_C},
+    {"      add", ADD_C},
+    {"      imul", MUL_C},
+    {"      sub", SUB_C},
+    {"      idiv", DIV_C},
 
     {"call pow_func\n", POW_C},     // добавить через инклуд как и принтф
 
-    {"        and", LOG_AND},     
-    {"        or", LOG_OR},     
+    {"      and", LOG_AND},     
+    {"      or", LOG_OR},     
 
 };
 
@@ -119,34 +119,34 @@ void operat_ptinting(Arg_s)
     
     if(strcmp(command, "call pow_func\n") == 0)
     {
-        fprintf(fp, "       pop rsi\n");            //  - степень
-        fprintf(fp, "       pop rdi\n");            //  - что возводим  
+        fprintf(fp, "      pop rsi\n");            //  - степень
+        fprintf(fp, "      pop rdi\n");            //  - что возводим  
 
-        fprintf(fp, "       %s\n", command);
+        fprintf(fp, "      %s\n", command);
 
-        fprintf(fp, "       push rax\n");
+        fprintf(fp, "      push rax\n");
 
         return ;
     }
 
 
-    fprintf(fp, "       pop rcx\n");
-    fprintf(fp, "       pop rax\n");
+    fprintf(fp, "      pop rcx\n");
+    fprintf(fp, "      pop rax\n");
 
 
     if(strcmp(command, "idiv") == 0)
     {
-        fprintf(fp, "       cdq\n");           // расширяем EAX → EDX:EAX
-        fprintf(fp, "       idiv ecx\n");
+        fprintf(fp, "      cdq\n");           // расширяем EAX → EDX:EAX
+        fprintf(fp, "      idiv ecx\n");
 
-        fprintf(fp, "       push rax\n");
+        fprintf(fp, "      push rax\n");
 
         return ;
     }
 
 
-    fprintf(fp, "       %s eax, ecx\n", command);
-    fprintf(fp, "       push rax\n");
+    fprintf(fp, "      %s eax, ecx\n", command);
+    fprintf(fp, "      push rax\n");
 
     return ; 
 }
@@ -187,10 +187,10 @@ void Asm_another(FILE* fp, Le_af leaf, ar_get)
                 Asm_expression(fp, leaf->left, ast);
                 
                 if(ast->id_of_now_func > -1)
-                    fprintf(fp, "\n    pop rax\n");
+                    fprintf(fp, "\n   pop rax\n");
 
-                fprintf(fp, "\n    mov rsp, rbp");
-                fprintf(fp, "\n    pop rbp\n\n");
+                fprintf(fp, "\n   mov rsp, rbp");
+                fprintf(fp, "\n   pop rbp\n\n");
 
                 fprintf(fp, "    ret\n");
             }
@@ -214,17 +214,17 @@ void Asm_another(FILE* fp, Le_af leaf, ar_get)
 
         //// standart functions vizov    
             case PRINT_F: //???
-                fprintf(fp, "\n\ncall printf what about params?+ align\n\n");
+                fprintf(fp, "\n\n call printf what about params?+ align\n\n");
                 Asm_expression(fp, leaf->prev->right, ast);
             break;
 
             case SQRT_C:  //???
-                fprintf(fp, "\n\ncall sqrt// свою написать надо\n\n");
+                fprintf(fp, "\n\n call sqrt// свою написать надо\n\n");
                 Asm_expression(fp, leaf->prev->right, ast);
             break;
 
             case SCAN_C:  //???
-                fprintf(fp, "\n\ncall scan\n\n");
+                fprintf(fp, "\n\n call scan\n\n");
             break;
 
             case EQUAL_C:
@@ -260,12 +260,12 @@ void embezzlement(Arg_s)    // присвоение, хищничество
 
     ////////////////////////////////////
     Asm_expression(fp, leaf->right, ast);
-    fprintf(fp, "       pop rax\n");
+    fprintf(fp, "      pop rax\n");
     ////////////////////////////////////
 
     if(varia_stk->is_it_func_param == YES_IT_IS)
     {
-        fprintf(fp, "\n        mov [rbp + 8 + %d], eax        ; take [%d] param = <%s> for func from stack", (8 * varia_stk->call_number), (varia_stk->call_number + 1), name);
+        fprintf(fp, "\n      mov [rbp + 8 + %d], eax        ; take [%d] param = <%s> for func from stack", (8 * varia_stk->call_number), (varia_stk->call_number + 1), name);
 
         free(name);
 
@@ -274,11 +274,11 @@ void embezzlement(Arg_s)    // присвоение, хищничество
 
     if(varia_stk->is_global == GLOBA_L)
     {
-        fprintf(fp, "\n        lea rbx, [rip + %s]        ; global param <%s> takes from label", name, name);
-        fprintf(fp, "\n        mov dword ptr [rbx], eax\n");
+        fprintf(fp, "\n      lea rbx, [rip + %s]        ; global param <%s> takes from label", name, name);
+        fprintf(fp, "\n      mov dword ptr [rbx], eax\n");
     }
     else                    // func + gl_if
-        fprintf(fp, "\n        mov [rbp - 8 - %d], eax        ; local param <%s> eat from stack mem\n", (8 * varia_stk->offset_in_loca_l), name);
+        fprintf(fp, "\n      mov [rbp - 8 - %d], eax        ; local param <%s> eat from stack mem\n", (8 * varia_stk->offset_in_loca_l), name);
     
     free(name);
 }

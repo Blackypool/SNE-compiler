@@ -68,27 +68,34 @@ void Asm_init_varia(Arg_s)
     ////////////////DO_PARAM////////////////
     if(global_or_not == GLOBA_L)          // => need global metka
     {
-        // обработать отдельно ввод с клавы
-        fprintf(fp, "\n   jmp skip_global_label_%s\n", nick_name->value.x);
+        fprintf(fp, "\n;_________INIT_%s______________\n", nick_name->value.x);
+        fprintf(fp, "   jmp skip_global_label_%s\n", nick_name->value.x);
 
-        fprintf(fp, "%s:            ; init ->\n", nick_name->value.x);
+        ///////////////////////
+        fprintf(fp, " %s:            ; init ->\n", nick_name->value.x);
         fprintf(fp, "\t.long   %.0lf\n", val_ue->value.num); 
-
-        fprintf(fp, "   skip_global_label_%s:\n\n", nick_name->value.x);
 
         Asm_expression(fp, val_ue, ast);
 
-        fprintf(fp, "       pop rax\n");
-        fprintf(fp, "       mov dword ptr [rel %s], eax\n", nick_name->value.x);
-    
-        return ;
+        fprintf(fp, "   pop rax\n");
+        fprintf(fp, "   mov dword ptr [rel %s], eax\n", nick_name->value.x);
+        ///////////////////////
+
+        fprintf(fp, "   skip_global_label_%s:\n", nick_name->value.x);
+        fprintf(fp, ";_________________________________________\n\n");
     }
     else                                  // => just place in stack
     {
+        fprintf(fp, "\n ;_________INIT_%s______________\n", nick_name->value.x);
+
+        ///////////////////////
         Asm_expression(fp, val_ue, ast);  
      
-        fprintf(fp, "\n       pop rax                ; init ->");        // первый параметр в рбп + 8   
-        fprintf(fp, "\n       mov [rbp - 8 - %d], eax    ; go to array on stack <%s>\n", (8 * param_array->all_param_s[now_par].offset_in_loca_l), nick_name->value.x);
+        fprintf(fp, "\n   pop rax                ; init ->");        // первый параметр в рбп + 8   
+        fprintf(fp, "\n   mov [rbp - 8 - %d], eax    ; go to array on stack <%s>\n", (8 * param_array->all_param_s[now_par].offset_in_loca_l), nick_name->value.x);
+        ///////////////////////
+
+        fprintf(fp, " ;_________________________________________\n\n");
     }
     ////////////////////////////////////////
 }
@@ -108,8 +115,8 @@ void var_printing(Arg_s)
 
     if(varia_stk->is_it_func_param == YES_IT_IS)
     {
-        fprintf(fp, "\n     mov eax, [rbp + 8 + %d]        ; take [%d] param = <%s> for func from stack", (8 * varia_stk->call_number), (varia_stk->call_number + 1), name);
-        fprintf(fp, "\n     push rax                       ; var printing\n");
+        fprintf(fp, "\n      mov eax, [rbp + 8 + %d]        ; take [%d] param = <%s> for func from stack", (8 * varia_stk->call_number), (varia_stk->call_number + 1), name);
+        fprintf(fp, "\n      push rax                       ; var printing\n");
 
         free(name);
 
@@ -119,14 +126,14 @@ void var_printing(Arg_s)
 
     if(varia_stk->is_global == GLOBA_L)
     {
-        fprintf(fp, "\n        lea rbx, [rip + %s]        ; global param <%s> takes from label", name, name);
-        fprintf(fp, "\n        mov eax, dword ptr [rbx]\n");
+        fprintf(fp, "\n      lea rbx, [rip + %s]        ; global param <%s> takes from label", name, name);
+        fprintf(fp, "\n      mov eax, dword ptr [rbx]\n");
     }
     else                    // func + gl_if
-        fprintf(fp, "\n        mov eax, [rbp - 8 - %d]        ; local param <%s> eat from stack mem\n", (8 * varia_stk->offset_in_loca_l), name);
+        fprintf(fp, "\n      mov eax, [rbp - 8 - %d]        ; local param <%s> eat from stack mem\n", (8 * varia_stk->offset_in_loca_l), name);
 
 
-    fprintf(fp, "\n     push rax\n");
+    fprintf(fp, "\n      push rax\n");
     
     free(name);
 }
@@ -147,7 +154,7 @@ params_in_scope* search_in_scope(ar_get, char* name_var)
     }
     //////////////////////////////////////////////////
 
-    fprintf(stderr, "param %s is not found in scope\n\n", name_var);
+    fprintf(stderr, "\nparam %s is not found in scope\n\n", name_var);
 
     return NULL;
 }
@@ -168,17 +175,21 @@ void func_user_ptinting(Arg_s)
     stack_push(ast->skope_stack, func_struct->argument_s_for_scope_push);
 
     ////////PUSH_ARGS///////////
+    fprintf(fp, "\n ;_______FUNC_USE_____");
+
     Asm_get_args_(fp, leaf->left, ast);
     ////////////////////////////
 
     stack_pop(ast->skope_stack);
 
     ///////////CALL/////////////
-    fprintf(fp, "call %s\n", func_name);
+    fprintf(fp, "   call %s\n", func_name);
 
-    fprintf(fp, "add rsp, %zu        ; skip push params \n", (8 * func_struct->amount_of_params));
+    fprintf(fp, "   add rsp, %zu        ; skip push params \n", (8 * func_struct->amount_of_params));
 
-    fprintf(fp, "push rax            ; вернули ret in stack\n");
+    fprintf(fp, "   push rax            ; вернули ret in stack\n");
+
+    fprintf(fp, " ;____________________\n");
     ////////////////////////////
 
     free(func_name);
@@ -192,7 +203,7 @@ user_func_info* search_user_func(ar_get, char* name_func)
         if(strcmp(name_func, ast->all_func[i].name_of_func) == 0)
             return &(ast->all_func[i]);
 
-    fprintf(stderr, "func %s is not found\n\n", name_func);
+    fprintf(stderr, "\nfunc %s is not found\n\n", name_func);
 
     return NULL;
 }
@@ -267,7 +278,7 @@ void user_oper_init(Arg_s)
                 \n\
                 \n;=====================================================\n\n", ast->all_func[func_id].name_of_func, ast->all_func[func_id].amount_of_params);
     
-    fprintf(fp, "%s:\n;{\n\n", name_of_func->value.us_op);  
+    fprintf(fp, "%s:\n;{\n", name_of_func->value.us_op);  
     ////////////////////////////////////
 
     /////////////SCOPE_UPD//////////////

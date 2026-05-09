@@ -3,14 +3,14 @@
 //____________________________________________________JUMP_ERS____________________________________________________________________________//
 static struct znaki jumpers[] = {
 
-    {"je", EQUAL_C},
-    {"jne", N_EQUAL_C},
+    {"   je", EQUAL_C},
+    {"   jne", N_EQUAL_C},
 
-    {"jge", L_E_bigger},
-    {"jg", L_bigger_R},
+    {"   jge", L_E_bigger},
+    {"   jg", L_bigger_R},
 
-    {"jle", L_E_smaller},
-    {"jl", L_smaller_R},
+    {"   jle", L_E_smaller},
+    {"   jl", L_smaller_R},
     
 };
 
@@ -18,13 +18,15 @@ void bear_gammy_jump_func(Arg_s)
 {
     DE_BUG(leaf);
 
+    fprintf(fp, "\n ;________CMP_________");
+
     Asm_expression(fp, leaf->left,  ast);
     Asm_expression(fp, leaf->right, ast);
 
-    fprintf(fp, "       pop rcx\n");
-    fprintf(fp, "       pop rax\n\n");
+    fprintf(fp, "\n   pop rcx");
+    fprintf(fp, "\n   pop rax\n\n");
 
-    fprintf(fp, "       cmp rax, rcx\n");
+    fprintf(fp, "   cmp rax, rcx\n");
 
     ////////////////////////////////////
 
@@ -37,7 +39,9 @@ void bear_gammy_jump_func(Arg_s)
 
     for(size_t i = 0; i < size_of_JT_table; ++i)
         if(leaf->value.oper == (size_t)jumpers[i].e_num)
-            fprintf(fp, "%s %s\n", jumpers[i].value, label_name);
+            fprintf(fp, "%s    %s\n", jumpers[i].value, label_name);
+
+    fprintf(fp, " ;____________________\n");
 }
 //________________________________________________________________________________________________________________________________________//
 
@@ -68,31 +72,31 @@ void Asm_if_cmd(Arg_s)
     if(leaf->right->value.oper == ELSE_C)
     {
         /////////////////ELSE//////////////////
-        fprintf(fp, "; else:\n");
+        fprintf(fp, " ; else:\n");
 
         Asm_expression(fp, leaf->right->right, ast);
         
-        fprintf(fp, "jmp %s\n", end_of_if_label);
+        fprintf(fp, " jmp %s\n", end_of_if_label);
         //////////////////////////////////////
 
 
         /////////////////_IF_/////////////////
-        fprintf(fp, "%s:        ; if:\n\n", name_forr_if);
+        fprintf(fp, " %s:        ; if:\n\n", name_forr_if);
 
         Asm_expression(fp, leaf->right->left, ast);
         
-        fprintf(fp, "%s:\n", end_of_if_label);
+        fprintf(fp, " %s:\n", end_of_if_label);
         //////////////////////////////////////
     }
     else
     {
         /////////////////_IF_/////////////////
-        fprintf(fp, "jmp %s\n", end_of_if_label);
-        fprintf(fp, "%s:        ; if:\n\n", name_forr_if);
+        fprintf(fp, " jmp %s\n", end_of_if_label);
+        fprintf(fp, " %s:        ; if:\n\n", name_forr_if);
 
         Asm_expression(fp, leaf->right, ast);
         
-        fprintf(fp, "%s:\n", end_of_if_label);
+        fprintf(fp, " %s:\n", end_of_if_label);
         //////////////////////////////////////
     }
     ///////////////////////////////////////////////
@@ -113,7 +117,7 @@ void Asm_while_cmd(Arg_s)
     ///////////////////START//////////////////////
     char start_of_while_[120] = {};
     snprintf(start_of_while_, sizeof(start_of_while_), "start_of_while_%s", name_forr_while);
-    fprintf(fp, "%s:\n", start_of_while_);
+    fprintf(fp, " %s:\n", start_of_while_);
     ///////////////////////////////////////////////
 
 
@@ -124,12 +128,12 @@ void Asm_while_cmd(Arg_s)
 
     /////////////////////BODY//////////////////////
     Asm_expression(fp, root_of_while->right, ast);   
-    fprintf(fp, "jmp %s", start_of_while_);
+    fprintf(fp, " jmp %s", start_of_while_);
     ///////////////////////////////////////////////
 
 
     /////////////////////END//////////////////////
-    fprintf(fp, "%s:\n", name_forr_while);
+    fprintf(fp, " %s:\n", name_forr_while);
     ///////////////////////////////////////////////
 
 
@@ -207,7 +211,7 @@ void last_word_from_if_wh(Arg_s, char* label_name)
         ast->id_of_now_func = -123;
         ast->num_init_in_gl_if = 0;
 
-        fprintf(fp, "\n______________;    return reins of power to global");
+        fprintf(fp, "\n ;______________;    return reins of power to global");
     }
     fprintf(fp, "    ;______________\n\n");
 
