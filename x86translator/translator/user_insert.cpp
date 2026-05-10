@@ -73,14 +73,14 @@ void Asm_init_varia(Arg_s)
         Asm_expression(fp, val_ue, ast);
         fprintf(fp, "      pop rax\n");
 
-        fprintf(fp, "\n   lea rcx, [rip + %s]        ; global param <%s> takes from label", name_of_var, name_of_var);
-        fprintf(fp, "\n   mov dword ptr [rcx], eax\n");
+        fprintf(fp, "\n   lea rcx, [rel %s]        ; global param <%s> takes from label", name_of_var, name_of_var);
+        fprintf(fp, "\n   mov dword [rcx], eax\n");
 
         fprintf(fp, ";_________________________________________\n\n");
 
         //////////FOR_DATA/////////////
         char name_for_global[128] = {};
-        snprintf(name_for_global, sizeof(name_for_global), "\n%s:\n\t.long   %.0lf\n", name_of_var, val_ue->value.num); 
+        snprintf(name_for_global, sizeof(name_for_global), "\n%s:\n\tdd   %.0lf\n", name_of_var, val_ue->value.num); 
 
         ast->section_data[ast->n_omer_real_global_for_data_sec] = strdup(name_for_global);
         AsserT(ast->section_data[ast->n_omer_real_global_for_data_sec] == NULL, memory_aloca, );
@@ -130,8 +130,8 @@ void var_printing(Arg_s)
 
     if(varia_stk->is_global == GLOBA_L)
     {
-        fprintf(fp, "\n      lea rcx, [rip + %s]        ; global param <%s> takes from label", name, name);
-        fprintf(fp, "\n      mov eax, dword ptr [rcx]\n");
+        fprintf(fp, "\n      lea rcx, [rel %s]        ; global param <%s> takes from label", name, name);
+        fprintf(fp, "\n      mov eax, dword [rcx]\n");
     }
     else                    // func + gl_if
         fprintf(fp, "\n      mov eax, [rbp - 8 - %d]        ; local param <%s> eat from stack mem\n", (8 * varia_stk->offset_in_loca_l), name);

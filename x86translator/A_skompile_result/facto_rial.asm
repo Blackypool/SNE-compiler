@@ -1,5 +1,8 @@
+bits 64
 section .text
 
+
+extern scanf
 
 global _start
 _start:
@@ -12,8 +15,8 @@ _start:
 
       pop rax
 
-   lea rcx, [rip + two]        ; global param <two> takes from label
-   mov dword ptr [rcx], eax
+   lea rcx, [rel two]        ; global param <two> takes from label
+   mov dword [rcx], eax
 ;_________________________________________
 
 
@@ -24,20 +27,20 @@ _start:
 
       pop rax
 
-   lea rcx, [rip + zero]        ; global param <zero> takes from label
-   mov dword ptr [rcx], eax
+   lea rcx, [rel zero]        ; global param <zero> takes from label
+   mov dword [rcx], eax
 ;_________________________________________
 
 
 ;_________INIT_one______________
 
-      lea rcx, [rip + two]        ; global param <two> takes from label
-      mov eax, dword ptr [rcx]
+      lea rcx, [rel two]        ; global param <two> takes from label
+      mov eax, dword [rcx]
 
       push rax
 
-      lea rcx, [rip + two]        ; global param <two> takes from label
-      mov eax, dword ptr [rcx]
+      lea rcx, [rel two]        ; global param <two> takes from label
+      mov eax, dword [rcx]
 
       push rax
       pop rcx
@@ -47,8 +50,8 @@ _start:
       push rax
       pop rax
 
-   lea rcx, [rip + one]        ; global param <one> takes from label
-   mov dword ptr [rcx], eax
+   lea rcx, [rel one]        ; global param <one> takes from label
+   mov dword [rcx], eax
 ;_________________________________________
 
 
@@ -73,8 +76,8 @@ fact_func:
       mov eax, [rbp + 8 + 0]        ; take [1] param = <num> for func from stack
       push rax                       ; var printing
 
-      lea rcx, [rip + one]        ; global param <one> takes from label
-      mov eax, dword ptr [rcx]
+      lea rcx, [rel one]        ; global param <one> takes from label
+      mov eax, dword [rcx]
 
       push rax
 
@@ -93,8 +96,8 @@ fact_func:
       mov eax, [rbp + 8 + 0]        ; take [1] param = <num> for func from stack
       push rax                       ; var printing
 
-      lea rcx, [rip + one]        ; global param <one> takes from label
-      mov eax, dword ptr [rcx]
+      lea rcx, [rel one]        ; global param <one> takes from label
+      mov eax, dword [rcx]
 
       push rax
       pop rcx
@@ -142,8 +145,8 @@ fact_func:
       mov eax, [rbp + 8 + 0]        ; take [1] param = <num> for func from stack
       push rax                       ; var printing
 
-      lea rcx, [rip + zero]        ; global param <zero> takes from label
-      mov eax, dword ptr [rcx]
+      lea rcx, [rel zero]        ; global param <zero> takes from label
+      mov eax, dword [rcx]
 
       push rax
 
@@ -157,13 +160,13 @@ fact_func:
  label_1:        ; if:
 
 
-      lea rcx, [rip + one]        ; global param <one> takes from label
-      mov eax, dword ptr [rcx]
+      lea rcx, [rel one]        ; global param <one> takes from label
+      mov eax, dword [rcx]
 
       push rax
 
-      lea rcx, [rip + two]        ; global param <two> takes from label
-      mov eax, dword ptr [rcx]
+      lea rcx, [rel two]        ; global param <two> takes from label
+      mov eax, dword [rcx]
 
       push rax
       pop rcx
@@ -181,8 +184,8 @@ fact_func:
     ;______________
 
 
-      lea rcx, [rip + one]        ; global param <one> takes from label
-      mov eax, dword ptr [rcx]
+      lea rcx, [rel one]        ; global param <one> takes from label
+      mov eax, dword [rcx]
 
       push rax
 
@@ -200,57 +203,83 @@ fact_func_skip_init:
 
 
 ;_________INIT_need______________
-jmp skip_init_aligned_stack
+jmp skip_init_scan_ff
 ;===============ALIGNE===============nothing==========
 
-;   Entry:      rdi = ptr to format  //  rsi = where save scan
+;   Entry:      nothing
 ;   Exit:       aligned stack + scanf num in ax
 ;   Expected:   nothing
-;   Destr:      rbx, rax, rsp
+;   Destr:      ax, di, si, dx, cx, bx
 
 ;=====================================================
 
-aligned_stack: 
+M_Scanf:
 ;{
-    pop rax         ; rax = ret
+    sub rsp, 32                 ; massiva on stack
     
-    mov rbx, rsp   
-    and rbx, 15     ; 0x0..01111   
+    mov rax, 0
+    mov rdi, 0
+    mov rsi, rsp
+    mov rdx, 32
+    syscall
+    
+    xor rdx, rdx
+    xor rax, rax                ; res
+    xor rcx, rcx                ; num in massiva
+    mov rbx, 1                  ; sign
+    
+    cmp byte [rsp], '-'
+    jne positive_sc
+    mov rbx, -1
+    inc rcx
 
-    cmp rbx, 0      
-    je align_is_true
+ positive_sc:
+ ;{
+    mov dl, byte [rsp + rcx]
+    cmp dl, '0'
+    jl return_0_from_scanf
 
-    sub rsp, 8
+    cmp dl, '9'
+    jg return_0_from_scanf
 
- align_is_true: 
+    sub dl, '0'
+    imul eax, 10
+    add eax, edx
+    
+    inc ecx
+    jmp positive_sc
+ ;}
 
-    push rax
+ return_0_from_scanf:
+
+    imul eax, ebx               ; up sign
+    add rsp, 32                 ; free(stack)
+
     ret
 ;}
-skip_init_aligned_stack:
+skip_init_scan_ff:
 ;_____________________________________________________
-      lea rdi, [rip + format]
 
-      lea rsi, [rip + num]
+      lea rdi, [rel format]
 
-      call aligned_stack
+      lea rsi, [rel num]
 
-call scan
+call M_Scanf
 
-      mov eax, dword ptr [rip + num]
+      mov eax, dword [rel num]
       push rax
       pop rax
 
-   lea rcx, [rip + need]        ; global param <need> takes from label
-   mov dword ptr [rcx], eax
+   lea rcx, [rel need]        ; global param <need> takes from label
+   mov dword [rcx], eax
 ;_________________________________________
 
 
 ;_________INIT_samFactor______________
 
  ;_______FUNC_USE_____
-      lea rcx, [rip + need]        ; global param <need> takes from label
-      mov eax, dword ptr [rcx]
+      lea rcx, [rel need]        ; global param <need> takes from label
+      mov eax, dword [rcx]
 
       push rax
    call fact_func
@@ -259,8 +288,8 @@ call scan
  ;____________________
       pop rax
 
-   lea rcx, [rip + samFactor]        ; global param <samFactor> takes from label
-   mov dword ptr [rcx], eax
+   lea rcx, [rel samFactor]        ; global param <samFactor> takes from label
+   mov dword [rcx], eax
 ;_________________________________________
 
 ;__________INIT_BIG_PRINTF__________
@@ -434,10 +463,8 @@ call scan
         pop rcx
         ;
 
-        call sec_printf
-
         ; renessans stack
-        return_0:
+        ; return_0:
 
             mov rsp, rbp
             pop rbp
@@ -496,161 +523,12 @@ call scan
         
 
 
-    ;===============sec_printf================my_style====
-    ;               steck par r11-8        regs par r12-8         xxm par r13-8
-    ;   Entry:      [BP + 32 + r11]   //   [BP - 40 + r12]   //   [BP - 104 + r13]   //   rdi [BP + 24]
-    ;   Exit:       true printf
-    ;   Expected:   Entry
-    ;   Destr:      uuu its quastion to not me br..
-
-    ;=====================================================
-
-    sec_printf:
-    ;{
-        mov rax, rcx    ; renessans al for xmm regs
-
-        ; defolt regs
-        ;{
-            mov rdi, [rbp + 24]
-        
-            mov r9,  [rbp - 8 ]
-
-            mov r8,  [rbp - 16]
-
-            mov rcx, [rbp - 24]
-
-            mov rdx, [rbp - 32]
-
-            mov rsi, [rbp - 40]
-        ;}
-
-        cmp al, 0
-        je steck_params
-        ; xmmN renessans
-        ;{
-            movq  xmm7, [rbp - 48 ]
-
-            movq  xmm6, [rbp - 56 ]
-
-            movq  xmm5, [rbp - 64 ]
-
-            movq  xmm4, [rbp - 72 ]
-
-            movq  xmm3, [rbp - 80 ]
-
-            movq  xmm2, [rbp - 88 ]
-
-            movq  xmm1, [rbp - 96 ]
-
-            movq  xmm0, [rbp - 104]
-        ;}
-
-        cmp r11, 8
-        jl skip_stack_params
-
-        ; heal offset of stack
-        ;{
-            mov rbx, r11
-            and rbx, 0xF
-            cmp rbx, 0
-            je check_stack_16_r11good           ; r11 // 16
-
-            ; r11 !// 16
-            ;{
-                mov rbx, rsp
-                and rbx, 0xF
-                cmp rbx, 0
-                jne steck_params                ; r11 and rsp ! // 16 => good (-1)(-1) = +
-
-                sub rsp, 8
-                sub r11, 8
-                jmp steck_params
-            ;}
-
-            ; r11 // 16
-            check_stack_16_r11good:
-            ;{
-                mov rbx, rsp
-                and rbx, 0xF
-                cmp rbx, 0
-                je steck_params                 ; r11 and rsp // 16 => all good
-
-                sub rsp, 8
-                sub r11, 8
-                jmp steck_params
-            ;}
-        ;}
-
-        steck_params:
-        ;{
-            cmp r11, 0
-            jl skip_stack_params
-
-            mov rbx, [rbp + 40 + r11]
-            push rbx
-            sub r11, 8
-
-            jmp steck_params
-        ;}
-        skip_stack_params:
-
-        ; second chance for stack renessans 16
-        ;{
-            mov rbx, rsp
-            and rbx, 0xF
-            cmp rbx, 0
-            je kratno_all_good
-
-            sub rsp, 8
-        ;}
-        kratno_all_good:
-
-        call printf wrt ..plt
-
-        jmp return_0
-    ;}
-
-    ;_____________________________________________________
-
-
-
     ;======             c   d    f    o             ======
 
     ;   Entry:      r9 = param && [DX] = where save  
     ;   Exit:       save what give r9+ax --> in [DX]
     ;   Expected:   Entry
     ;   Destr:      ax, dx, r9
-
-    ;=====================================================
-
-    c_char:
-    ;{
-        mov rax, r9
-        mov byte [rdx], al
-        inc rdx
-            
-        jmp break_
-    ;}
-
-    ;=====================================================
-
-    s_string:
-    ;{
-        while_s_sl0:
-            mov al, [r9]
-
-            cmp al, 0
-            je break_
-
-            mov byte [rdx], al
-            inc r9
-            inc rdx
-
-            jmp while_s_sl0
-
-                
-        jmp break_
-    ;}
 
     ;=====================================================
 
@@ -767,272 +645,6 @@ call scan
     ;}
 
     ;=====================================================
-
-    f_float:
-    ;{
-        movq xmm0, r9               ; xmm0 = original just copy bites
-        jmp check_NAN_Inf
-        
-        not_anomaly:
-        pop r9
-
-        ; convert усечение Scalar d 2 Signed Integer
-        cvttsd2si rax, xmm0         ; AX = int
-        mov r9, rax
-
-        ; int part
-        ;{
-            mov r8, 2222                ; flag for ret here from dec
-            push rax
-            call d_decimal              ; printf int
-            pop rax
-            
-            mov byte [rdx], '.'
-            inc rdx
-        ;}
-
-        ; delete int
-        ;{  cvttsd2si^-1 
-            cvtsi2sd xmm1, rax          ; xmm1 = int
-
-            subsd xmm0, xmm1            ; xmm0 = after point part
-        ;}
-
-        ; after point --> int 
-        ;{
-            mov rax, 1000000
-            cvtsi2sd xmm1, rax
-
-            mulsd xmm0, xmm1            
-            cvttsd2si r9, xmm0
-
-            mov r8, 1111            ; flag for first zero_s
-            call d_decimal
-        ;}
-
-        mov r8, 12                  ; change r8 for not confuse defolt dec
-        jmp break_
-    ;}
-
-    ;=====================================================
-
-    check_NAN_Inf:
-    ;{
-        push r9
-        
-        mov rax, 0x7FF0000000000000         ;mask for chek anomaly
-        and r9, rax
-        cmp r9, rax
-        jne not_anomaly
-
-        pop r9
-        push r9
-        shl r9, 12      ; go out of exp
-        cmp r9, 0
-        je inf_find
-        
-        ;NAN_moment
-        ;{
-            inc rdi                         ; next after inf
-
-            mov byte [rdx], 'N'
-            inc rdx
-            mov byte [rdx], 'A'
-            inc rdx
-            mov byte [rdx], 'N'
-            inc rdx
-
-            pop r9          ; renessans stack_chik
-            pop rax         ; eat ret from jump_table for not disbalance stack
-
-            jmp while_sl_zero
-        ;}
-
-
-        inf_find:
-        ;{
-            inc rdi                         ; next after inf
-
-            pop r9                          ; renessans stack
-            mov rax, 0xFFF0000000000000     ; check first 1 bit for -INF
-
-            and r9, rax
-            cmp r9, rax
-            jne minus_not_need
-
-            mov byte [rdx], '-'
-            inc rdx
-
-        minus_not_need:
-
-            mov byte [rdx], 'I'
-            inc rdx
-            mov byte [rdx], 'N'
-            inc rdx
-            mov byte [rdx], 'F'
-            inc rdx
-
-            pop rax         ; eat ret from jump_table for not disbalance stack
-
-            jmp while_sl_zero
-        ;}
-    ;}
-
-    ;=====================================================
-
-    b_binary:
-    ;{
-        push 1
-        push 63
-        push 1
-        push 'b'
-
-        call percent_pow_two
-
-        jmp break_
-    ;}
-
-    ;=====================================================
-
-    o_octagon:
-    ;{
-        push 7
-        push 63
-        push 3
-        push 'o'
-
-        call percent_pow_two
-
-        jmp break_
-    ;}
-
-    ;=====================================================
-
-    x_hexagon:
-    ;{
-        push 0xF
-        push 60
-        push 4
-        push 'x'
-
-        call percent_pow_two
-
-        jmp break_
-    ;}
-
-    ;======               b   o   x                 ======
-
-    ;   Entry:      mask, shr/l, degree of two, letter
-    ;   Exit:       save what give r9 --> in [DX]
-    ;   Expected:   r9 = param && [DX] = where save  
-    ;   Destr:      ax, r9, rdx
-
-    ;=====================================================
-
-    percent_pow_two:
-    ;{  
-        ;{  go params
-            push rdi        
-            mov rdi, rsp
-
-            push r14        
-            push r8         
-            push rcx       
-            push rbx        
-
-            push r15        ; flag for only one zero
-            push rsi        ; save mask for same task)
-
-            mov r14, [rdi + 16]     ; letter     -->     next flag for first zero_s
-            mov r8,  [rdi + 24]     ; degree of two (16 = 4; 8 = 3; 2 = 1)
-            mov rcx, [rdi + 32]     ; sh r/l
-            mov rbx, [rdi + 40]     ; mask
-            mov rsi, rbx
-        ;}
-
-        ;0|x_b_o|
-            mov byte [rdx], '0'
-            inc rdx
-
-            mov byte [rdx], r14b
-            inc rdx
-
-            mov r15, rdx
-            xor r14, r14    ; flag for first zero_s
-        ;      
-
-        while__force:
-        ;{
-            mov rbx, rsi
-            mov rax, r9
-
-            shr rax, cl
-            cmp al, 10
-            jb num_need
-
-            sub al, 10
-            add al, 'A'
-
-            jmp next_pow_xbo
-
-        num_need:
-            cmp al, 0
-            je zero_skipper_xbo
-
-        no_skipa_xbo:
-            add al, '0'
-
-        next_pow_xbo:
-            mov byte [rdx], al
-            inc rdx
-            inc r14             ; ruin flag for not skeep zero_s
-
-        need_skip_xbo:
-            ; burn hight bit
-                mov rax, r9
-                shl rbx, cl
-                and rax, rbx
-                sub r9, rax
-            ;
-
-            sub rcx, r8
-            cmp rcx, 0
-            jge while__force
-
-            jmp mb_only_one_zero
-
-                zero_skipper_xbo:
-                    cmp r14, 0
-                    je need_skip_xbo
-
-                    jmp no_skipa_xbo
-        ;}
-
-    mb_only_one_zero:
-        ;{
-            cmp rdx, r15
-            jne end_of_xbo
-
-            mov byte [rdx], '0'
-            inc rdx
-        ;}
-
-    end_of_xbo:
-        ;{ cleaning
-            pop rsi
-            pop r15
-
-            pop rbx
-            pop rcx
-            pop r8
-            pop r14
-
-            pop rdi
-        ;}
-
-        ret 32
-    ;}
-
     skip_init_of_M_printf_s:
 
     ;_____________________________________________________
@@ -1044,30 +656,30 @@ call scan
         ; jt:
         align 8
     Springboard:
-        dq b_binary      ; 98
-        dq c_char        ; 99
+        dq not_def_spec      ; 98
+        dq not_def_spec        ; 99
         dq d_decimal     ; 100
         dq not_def_spec  ; 101
-        dq f_float       ; 102
+        dq not_def_spec       ; 102
         times ('l' - 'f' -1) dq not_def_spec
-        dq f_float       ; doubble = float
+        dq not_def_spec       ; doubble = float
         times ('o' - 'l' -1) dq not_def_spec
-        dq o_octagon     ; 111
+        dq not_def_spec     ; 111
         times ('s' - 'o' -1) dq not_def_spec
-        dq s_string      ; 115
+        dq not_def_spec      ; 115
         times ('x' - 's' -1) dq not_def_spec
-        dq x_hexagon     ; 120
+        dq not_def_spec     ; 120
     ;}
     ;_____________________________________________________
     section .text
 ;}
-      lea rcx, [rip + samFactor]        ; global param <samFactor> takes from label
-      mov eax, dword ptr [rcx]
+      lea rcx, [rel samFactor]        ; global param <samFactor> takes from label
+      mov eax, dword [rcx]
 
       push rax
 
       pop rsi
-      lea rdi, [rip + format]
+      lea rdi, [rel format]
       xor rax, rax
 call M_printf_s
 
@@ -1079,26 +691,26 @@ mov rax, 60
 mov rdi, 0
 syscall
 
-.section .data
+section .data
 
 two:
-	.long   2
+	dd   2
 
 zero:
-	.long   0
+	dd   0
 
 one:
-	.long   0
+	dd   0
 
 need:
-	.long   0
+	dd   0
 
 samFactor:
-	.long   0
+	dd   0
 
 format db "%d", 10, 0
 
 
-.section .bss
+section .bss
 
     num resd 1

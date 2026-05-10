@@ -13,7 +13,9 @@ int asm_main(ar_get)
     //////////////////START////////////////////////
     ast->is_global_now = GLOBA_L;
 
+    fprintf(fp, "bits 64\n");
     fprintf(fp, "section .text\n\n\n");
+    fprintf(fp, "extern scanf\n\n");
     fprintf(fp, "global _start\n_start:\n\n");
     ///////////////////////////////////////////////
 
@@ -29,14 +31,14 @@ int asm_main(ar_get)
 
 
     ////////////////////DATA///////////////////////
-    fprintf(fp, "\n\n.section .data\n");
+    fprintf(fp, "\n\nsection .data\n");
     for(size_t i = 0; i < ast->max_varia_num; i++)
         if(ast->section_data[i] != NULL)
             fprintf(fp, "%s", ast->section_data[i]);
 
     fprintf(fp, "\nformat db \"%%d\", 10, 0\n");        // format for printf+scanf
 
-    fprintf(fp, "\n\n.section .bss\n");
+    fprintf(fp, "\n\nsection .bss\n");
     fprintf(fp, "\n    num resd 1\n");                  // for scanf 
     ///////////////////////////////////////////////
 
@@ -167,7 +169,7 @@ void operat_ptinting(Arg_s)
 static struct include_func include[] = {
 
     {"call M_printf_s", PRINT_F,    NO_ITS_NO,  "standart_func/printf.asm"  },
-    {"call scan",       SCAN_C,     NO_ITS_NO,  "standart_func/aligned.asm" },
+    {"call M_Scanf",    SCAN_C,     NO_ITS_NO,  "standart_func/scanf.asm"   },
     {"call sq_rt",      SQRT_C,     NO_ITS_NO,  "standart_func/sq_rt.asm"   },
     {"call pow_func",   POW_C,      NO_ITS_NO,  "standart_func/pow_func.asm"},
 
@@ -204,7 +206,7 @@ void _include_func_(Arg_s, int include_com)
             Asm_expression(fp, leaf->left, ast);
 
             fprintf(fp, "\n      pop rsi");
-            fprintf(fp, "\n      lea rdi, [rip + format]");
+            fprintf(fp, "\n      lea rdi, [rel format]");
             fprintf(fp, "\n      xor rax, rax");
 
             fprintf(fp, "\n%s\n\n", include[include_com].value);
@@ -215,14 +217,12 @@ void _include_func_(Arg_s, int include_com)
         {
             // rdi = ptr to format
             // rsi = ptr where save
-            fprintf(fp, "\n      lea rdi, [rip + format]\n");
-            fprintf(fp, "\n      lea rsi, [rip + num]\n");
-
-            fprintf(fp, "\n      call aligned_stack\n");
+            fprintf(fp, "\n      lea rdi, [rel format]\n");
+            fprintf(fp, "\n      lea rsi, [rel num]\n");
 
             fprintf(fp, "\n%s\n", include[include_com].value);
 
-            fprintf(fp, "\n      mov eax, dword ptr [rip + num]");
+            fprintf(fp, "\n      mov eax, dword [rel num]");
             fprintf(fp, "\n      push rax\n");
         }
         break;
@@ -366,8 +366,8 @@ void embezzlement(Arg_s)    // присвоение, хищничество
 
     if(varia_stk->is_global == GLOBA_L)
     {
-        fprintf(fp, "\n      lea rcx, [rip + %s]        ; global param <%s> takes from label", name, name);
-        fprintf(fp, "\n      mov dword ptr [rcx], eax\n");
+        fprintf(fp, "\n      lea rcx, [rel %s]        ; global param <%s> takes from label", name, name);
+        fprintf(fp, "\n      mov dword [rcx], eax\n");
     }
     else                    // func + gl_if
         fprintf(fp, "\n      mov [rbp - 8 - %d], eax        ; local param <%s> eat from stack mem\n", (8 * varia_stk->offset_in_loca_l), name);

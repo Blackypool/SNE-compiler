@@ -14,3 +14,6 @@ STACK_FUNC = translator/stack_func/constructor.cpp translator/stack_func/prAvert
 
 all:
 	g++ $(FLAGS) $(FILE_S) $(READ_TREE) $(STACK_FUNC) translator/M_X86.cpp
+
+# nasm -f elf64 A_skompile_result/facto_rial.asm -o A_skompile_result/facto_rial.o
+# x86_64-elf-ld -o a.out A_skompile_result/facto_rial.o
