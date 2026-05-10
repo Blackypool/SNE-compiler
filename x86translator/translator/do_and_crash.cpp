@@ -13,10 +13,10 @@ Le_af merger(char* argv, struct A_S_T* ast)
 
 
     /////////DO_AST/////////////
-    char* tree_txt = file__read(name_of_file);  //прочитали файл + init num varioa and func
+    char* tree_txt = file__read(name_of_file);  //прочитали файл
     char* save_ptr = tree_txt;
 
-    Le_af root = create_base(&tree_txt, ast);   //создали дерево по файлу
+    Le_af root = create_base(&tree_txt, ast);   //создали дерево по файлу + init num varioa and func
     picture_of_root(root, "AST");
     ast->root_of_ast = root;
     ////////////////////////////

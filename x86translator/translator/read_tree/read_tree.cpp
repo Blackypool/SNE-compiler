@@ -280,7 +280,7 @@ char* file__read(const char* name_file)
     FILE *fp = fopen(name_file, "rb");
     AsserT(fp == NULL, file_errorr, NULL);
 
-    char *ptr = (char*) calloc((number_char + 2), sizeof(char));
+    char *ptr = (char*)calloc((number_char + 2), sizeof(char));
     AsserT(ptr == NULL, memory_aloca, NULL);
 
     size_t count = fread(ptr, sizeof(char), number_char, fp);

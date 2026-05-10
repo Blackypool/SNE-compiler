@@ -2,7 +2,7 @@
 #define MAIN_COMPILATOR_H
 
 
-#define GLOBA_L 23                          // для переменных
+#define GLOBA_L 23
 #define LOCA_L  419
 
 #define YES_IT_IS 10        // параметр функции?
@@ -68,6 +68,8 @@ struct include_func
     int e_num;
 
     int is_use_in_program;
+
+    const char* name_of_file;
 };
 
 //______________________________________________________SCOPE______________________________________________________________________________//
@@ -140,14 +142,14 @@ struct A_S_T
 
     int is_global_now;
 
-    stk* labels_names_for_if_while;     // стек имен меток для рекурсивного вызова ифа и вайла 
+    stk* labels_names_for_if_while;         // стек имен меток для рекурсивного вызова ифа и вайла 
     
-    int free_label_for_if;              // номер свободной метки для ифа
+    int free_label_for_if;                  // номер свободной метки для ифа
 
-    int num_init_in_gl_if;              // номер инита в ифе который в глобале, обнуляется при выходе оттуда
+    int num_init_in_gl_if;                  // номер инита в ифе который в глобале, обнуляется при выходе оттуда
     
-    char** section_data;                // для сохранения глобальных переменных в дате а не посередине тиэксти
-    int n_omer_real_global_for_data_sec;// для хранения строк для печати
+    char** section_data;                    // для сохранения глобальных переменных в дате а не посередине тиэксти
+    int n_omer_real_global_for_data_sec;    // для хранения строк для печати
 };
 
 
@@ -225,8 +227,6 @@ enum ALL_OPer
     
     RAVNO = 33,     
     IN_IT = 34,
-
-    STR_CMP_C = 35,
 };
 
 enum errors_
@@ -246,10 +246,6 @@ enum errors_
     stack_errorr = 7,
 };
 
-enum registers
-{
-    //???
-};
 
 //_______________________________________________DE_B_U_G_SS_______________________________________________________________________________//
 

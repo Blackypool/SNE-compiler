@@ -1,20 +1,14 @@
 #include "AST_to_asm.h"
 
 
-// глобальные в сектион .data то есть делать дфух проходку? в первый проход делать асм экспрессион
-// чтобы вычислить значение глобальной переменной а потоь в самом конце в секции .data объявлять их
-
-// просто делать не пуш а сохранть в свободный регистр, если свободных нету значит в стек и включать флаг что забираем из стека 
-// а если забрать из регистра то в обратном порядке просто
-
-
-//_____________________________________________________START_____________________________________________________________________________//
+//_____________________________________________________START______________________________________________________________________________//
 int asm_main(ar_get)
 {
     AsserT(ast == NULL, give_null_ptr, give_null_ptr);
 
     FILE* fp = fopen(ast->end_file_name, "w");
     AsserT(fp == NULL, file_errorr, file_errorr);
+
 
     //////////////////START////////////////////////
     ast->is_global_now = GLOBA_L;
@@ -23,21 +17,30 @@ int asm_main(ar_get)
     fprintf(fp, "global _start\n_start:\n\n");
     ///////////////////////////////////////////////
 
+
     ///////////////////BODY////////////////////////
     Asm_expression(fp, ast->root_of_ast, ast);
     ///////////////////////////////////////////////
 
+
     ////////////////////END////////////////////////
     fprintf(fp, "\n\n; _______________________\n;return 0;\nmov rax, 60\nmov rdi, 0\nsyscall");
     ///////////////////////////////////////////////
+
 
     ////////////////////DATA///////////////////////
     fprintf(fp, "\n\n.section .data\n");
     for(size_t i = 0; i < ast->max_varia_num; i++)
         if(ast->section_data[i] != NULL)
             fprintf(fp, "%s", ast->section_data[i]);
+
+    fprintf(fp, "\nformat db \"%%d\", 10, 0\n");        // format for printf+scanf
+
+    fprintf(fp, "\n\n.section .bss\n");
+    fprintf(fp, "\n    num resd 1\n");                  // for scanf 
     ///////////////////////////////////////////////
 
+    
     fclose(fp);
 
     return 1;
@@ -82,34 +85,28 @@ void Asm_expression(Arg_s)
         break;
     }
 }
-//_______________________________________________________________________________________________________________________________________//
+//________________________________________________________________________________________________________________________________________//
 
 
 
-//___________________________________________________DEFAULT_FUNC________________________________________________________________________//
+//___________________________________________________DEFAULT_FUNC_________________________________________________________________________//
 static struct znaki translet_to_ASM[] = {
 
     {"add", ADD_C},
     {"imul", MUL_C},
     {"sub", SUB_C},
     {"idiv", DIV_C},
-
-    {"call pow_func\n", POW_C},     // добавить через инклуд как и принтф
-
     {"and", LOG_AND},     
     {"or", LOG_OR},     
 
 };
 
-const char* asm_ready_commands(Le_af leaf)
+const char* asm_ready_commands(int enum_of_need)
 {
-    AsserT(leaf == NULL, give_null_ptr, NULL);
-    DE_BUG(leaf);
+    int sz_of_translete = (int)(sizeof(translet_to_ASM) / sizeof(translet_to_ASM[0]));
 
-    size_t sz_of_translete = sizeof(translet_to_ASM) / sizeof(translet_to_ASM[0]);
-
-    for(size_t i = 0; i < sz_of_translete; i++)
-        if(leaf->value.oper == (size_t)translet_to_ASM[i].e_num)
+    for(int i = 0; i < sz_of_translete; i++)
+        if(enum_of_need == translet_to_ASM[i].e_num)
             return translet_to_ASM[i].value;
 
     return NULL;
@@ -119,37 +116,34 @@ void operat_ptinting(Arg_s)
 {
     DE_BUG(leaf);
 
-    const char* command = asm_ready_commands(leaf);
-    if(command == NULL)
+    const char* default_com = asm_ready_commands((int)leaf->value.oper);
+    if(default_com == NULL)
     {
-        Asm_another(fp, leaf, ast);
+        int include_com = search_num_in_jt((int)leaf->value.oper);
+
+        if(include_com == -1)
+        {
+            // not default func use
+            Asm_another(fp, leaf, ast);
+            return ; 
+        }
+
+        // include func:
+        _include_func_(arg_s, include_com);
 
         return ;
     }
 
-
+    // default func use:
     Asm_expression(fp, leaf->left, ast);
     Asm_expression(fp, leaf->right, ast);
-
-    
-    if(strcmp(command, "call pow_func\n") == 0)
-    {
-        fprintf(fp, "      pop rsi\n");            //  - степень
-        fprintf(fp, "      pop rdi\n");            //  - что возводим  
-
-        fprintf(fp, "      %s\n", command);
-
-        fprintf(fp, "      push rax\n");
-
-        return ;
-    }
 
 
     fprintf(fp, "      pop rcx\n");
     fprintf(fp, "      pop rax\n");
 
 
-    if(strcmp(command, "idiv") == 0)
+    if(strcmp(default_com, "idiv") == 0)
     {
         fprintf(fp, "      cdq\n");           // расширяем EAX → EDX:EAX
         fprintf(fp, "      idiv ecx\n");
@@ -160,7 +154,7 @@ void operat_ptinting(Arg_s)
     }
 
 
-    fprintf(fp, "      %s eax, ecx\n", command);
+    fprintf(fp, "      %s eax, ecx\n", default_com);
     fprintf(fp, "      push rax\n");
 
     return ; 
@@ -169,8 +163,106 @@ void operat_ptinting(Arg_s)
 
 
 
+//____________________________________________________STANDART____________________________________________________________________________//
+static struct include_func include[] = {
+
+    {"call M_printf_s", PRINT_F,    NO_ITS_NO,  "standart_func/printf.asm"  },
+    {"call scan",       SCAN_C,     NO_ITS_NO,  "standart_func/aligned.asm" },
+    {"call sq_rt",      SQRT_C,     NO_ITS_NO,  "standart_func/sq_rt.asm"   },
+    {"call pow_func",   POW_C,      NO_ITS_NO,  "standart_func/pow_func.asm"},
+
+};
+
+int search_num_in_jt(int enum_of_need)  // возвращает номер в структуре, он же джамп и тп
+{
+    int num_of_include = (int)(sizeof(include) / sizeof(include[0]));
+
+    for(int i = 0; i < num_of_include; i++)
+        if(enum_of_need == include[i].e_num)
+            return i;
+
+    return -1;
+}
+
+void _include_func_(Arg_s, int include_com)
+{
+    if(include[include_com].is_use_in_program == NO_ITS_NO)
+    {
+        char* include_d = file__read(include[include_com].name_of_file);
+        fprintf(fp, "%s", include_d);
+        free(include_d);
+
+        include[include_com].is_use_in_program = YES_IT_IS;
+    }
+
+    switch(include[include_com].e_num)
+    {
+        case PRINT_F:
+        {
+            // rdi = ptr to format
+            // rsi = , num);
+            Asm_expression(fp, leaf->left, ast);
+
+            fprintf(fp, "\n      pop rsi");
+            fprintf(fp, "\n      lea rdi, [rip + format]");
+            fprintf(fp, "\n      xor rax, rax");
+
+            fprintf(fp, "\n%s\n\n", include[include_com].value);
+        }
+        break;
+
+        case SCAN_C:
+        {
+            // rdi = ptr to format
+            // rsi = ptr where save
+            fprintf(fp, "\n      lea rdi, [rip + format]\n");
+            fprintf(fp, "\n      lea rsi, [rip + num]\n");
+
+            fprintf(fp, "\n      call aligned_stack\n");
+
+            fprintf(fp, "\n%s\n", include[include_com].value);
+
+            fprintf(fp, "\n      mov eax, dword ptr [rip + num]");
+            fprintf(fp, "\n      push rax\n");
+        }
+        break;
+
+        case SQRT_C:
+        {
+            Asm_expression(fp, leaf->left, ast);
+            fprintf(fp, "\n      pop rdi");
+
+            fprintf(fp, "\n%s\n", include[include_com].value);
+
+            fprintf(fp, "\n      push rax");
+        }
+        break;
+
+        case POW_C:
+        {
+            Asm_expression(fp, leaf->left, ast );    // == base
+            Asm_expression(fp, leaf->right, ast);    // == degr
+
+            fprintf(fp, "\n      pop rsi");
+            fprintf(fp, "\n      pop rdi");
+
+            fprintf(fp, "\n%s\n", include[include_com].value);
+
+            fprintf(fp, "\n      push rax\n");
+        }
+        break;
+    
+        default:
+            fprintf(stderr, "\nenum of include is not found\n\n");
+        break;
+    }
+}
+//________________________________________________________________________________________________________________________________________//
+
+
+
 //___________________________________________________NOT_DEF_FUNC_________________________________________________________________________//
-void Asm_another(FILE* fp, Le_af leaf, ar_get)
+void Asm_another(Arg_s)
 {
     DE_BUG(leaf);
 
@@ -225,21 +317,6 @@ void Asm_another(FILE* fp, Le_af leaf, ar_get)
 
             case RAVNO:
                 embezzlement(arg_s);
-            break;
-
-        //// standart functions vizov    
-            case PRINT_F: //???
-                fprintf(fp, "\n\n call printf what about params?+ align\n\n");
-                Asm_expression(fp, leaf->prev->right, ast);
-            break;
-
-            case SQRT_C:  //???
-                fprintf(fp, "\n\n call sqrt// свою написать надо\n\n");
-                Asm_expression(fp, leaf->prev->right, ast);
-            break;
-
-            case SCAN_C:  //???
-                fprintf(fp, "\n\n call scan\n\n");
             break;
 
             case EQUAL_C:
@@ -298,61 +375,3 @@ void embezzlement(Arg_s)    // присвоение, хищничество
     free(name);
 }
 //________________________________________________________________________________________________________________________________________//
-
-
-
-
-
-
-// bp, sp
-// ax, cx = operat / ret / all 
-// bx / r8 = for align
-
-// одновременный принтф в бинарник и насм
-// Сохранять последний код инструкции чтобы если уже был пуш не делать его еще ра
-
-
-// //____________________________________________________STANDART___________________________________________________________________________//
-// static struct include_func include[] = {
-
-//     {"M_printf_s", PRINT_F, 0},
-//     {"scan      ", SCAN_C, 0},
-//     {"sqrt      ", SQRT_C, 0},
-//     {"M_strcmp_",  STR_CMP_C, 0},
-    
-// };
-// // section .data
-// // ; jt:
-// //     align 8
-// //  Springboard:
-// //     dq M_printf_s
-// //     dq scan     
-// //     dq sqrt     
-// //     dq M_strcmp_  
-
-
-// // lea rsi, [rel Springboard]  ; rsi = offset+ip = full adr of jt 
-
-// // jmp [rsi + 8 * (rax)] ; jt
-
-
-// int search_num_in_jt(int enum_of_need)  // возвращает номер в структуре, он же джамп и тп
-// {
-//     size_t num_of_include = sizeof(include) / sizeof(include[0]);
-
-//     for(int i = 0; i < (int)num_of_include; i++)
-//         if(enum_of_need == include[i].e_num)
-//             return i;
-
-//     fprintf(stderr, "\nFunc that u want is now include == %s:%d", __FILE__, __LINE__);
-//     return -1;
-// }
-// //_______________________________________________________________________________________________________________________________________//
-
-// //____________________________________________________FOR_ABI____________________________________________________________________________//
-
-// // сделать вызов функции по аби - только у стандартных
-// // добавить выравнивание
-// // Структура с регистрами для АБИ
-
-// //_______________________________________________________________________________________________________________________________________//

@@ -54,7 +54,7 @@ void Asm_init_varia(Arg_s)
         }
     }
 
-    ////////////////////////////////////////
+    /////////////////INFO///////////////////
     param_array->all_param_s[now_par].is_global = global_or_not;
     param_array->all_param_s[now_par].name_of_var = strdup(name_of_var);
     param_array->all_param_s[now_par].is_it_func_param = NO_ITS_NO;   // тк init != func(a,b);

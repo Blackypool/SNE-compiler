@@ -8,13 +8,15 @@ int asm_main(ar_get);
 
 void Asm_expression(Arg_s);
 
-params_in_scope* search_info_for_IF_stk(ar_get, scope_table* stk_for_if_wh, char* name);
-
-const char* asm_ready_commands(Le_af leaf);
+const char* asm_ready_commands(int enum_of_need);
 
 void operat_ptinting(Arg_s);
 
-void Asm_another(FILE* fp, Le_af leaf, ar_get);
+int search_num_in_jt(int enum_of_need);
+
+void _include_func_(Arg_s, int include_com);
+
+void Asm_another(Arg_s);
 
 void embezzlement(Arg_s);
 

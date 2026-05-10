@@ -206,8 +206,14 @@ void last_word_from_if_wh(Arg_s, char* label_name)
 
     ast->is_global_now = stk_for_if_wh->all_param_s[0].is_global;
 
-    if(ast->is_global_now == GLOBA_L)       // возвращаем бразды правления
+    if(ast->is_global_now == GLOBA_L) // если предыдущий глобал значит надо стек восстановить если initov было > 0
     {
+        if(ast->num_init_in_gl_if > 0)
+        {
+            fprintf(fp, "\n   mov rbp, rsp");
+            fprintf(fp, "\n   pop rbp\n");
+        }
+        
         ast->id_of_now_func = -123;
         ast->num_init_in_gl_if = 0;
 
