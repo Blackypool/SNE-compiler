@@ -1,15 +1,5 @@
 ;__________INIT_BIG_PRINTF__________
 ;{    
-    ; +-inf // switch_jump_t // float*(-1) // call printf // one func b_o_x
-
-    ;           b   c   d    f    o    s    x   
-    ;           98  99  100  102  111  115  120
-
-    ; lldb-20  a.out -> run
-    ; nasm -f elf64 -l Float_supp.lst Float_supp.s  ;  ld -s -o a.out Float_supp.o
-
-    ; RIP-relative addressing  //  rip = now command => pie: now + msg = [rel msg]  //  Position Independent Executable = PIE
-
     jmp skip_init_of_M_printf_s
     ;===============M_printf_s===============cdecle=======
 
@@ -39,38 +29,7 @@
         push rdx        ; to save in buff               [BP - 32]
         push rsi        ; use in tempure calc in jt     [BP - 40]
     ;
-    cmp al, 0
-    je skip_xmm_N    ; float is not exist
-    ; float params in regs, start from [BP - 8 * 8 - 40(int params) + R13]        // r13 <= 8*8
-    ;______________
-        xor r13, r13    ; r13 = for float regs
 
-        movq r8, xmm7
-        push r8         ; [BP - 48]
-    
-        movq r8, xmm6
-        push r8         ; [BP - 56]
-
-        movq r8, xmm5
-        push r8         ; [BP - 64]
-
-        movq r8, xmm4
-        push r8         ; [BP - 72]
-
-        movq r8, xmm3
-        push r8         ; [BP - 80]
-
-        movq r8, xmm2
-        push r8         ; [BP - 88]
-
-        movq r8, xmm1
-        push r8         ; [BP - 96]
-
-        movq r8, xmm0
-        push r8         ; [BP - 104]
-    ;______________
-        
-        skip_xmm_N:
     ; prepare_s
         xor r8, r8                      ; flag for not need use float in dec in start before find float
         lea rdx, [rel what_prntf]       ; DX = start of buff with result // relative(относительная) addressing
@@ -280,11 +239,11 @@
         jmp next_shag_of_dec
 
 
-    _default_dec:
+     _default_dec:
         mov r11, 1                  ; flag of start zeros
         mov rsi, 10000000000        ; 10znak max
 
-    next_shag_of_dec:
+     next_shag_of_dec:
         mov r15, rdx                ; rdx need for DIV ((
 
         mov rdi, rdx                ; for check only one zero
@@ -327,14 +286,14 @@
                 jmp need_zero_d
         ;}
 
-    endi_of_d:
+     endi_of_d:
         cmp rdi, r15
         jne tochno_end
 
         mov byte [r15], '0'
         inc r15
 
-    tochno_end:
+     tochno_end:
         mov rdx, r15
 
         pop r15
@@ -352,30 +311,4 @@
 
     ;=====================================================
     skip_init_of_M_printf_s:
-
-    ;_____________________________________________________
-    section .data
-    ;{
-        ; buff with end of printfing
-        what_prntf times 1024 db 0
-
-        ; jt:
-        align 8
-    Springboard:
-        dq not_def_spec      ; 98
-        dq not_def_spec        ; 99
-        dq d_decimal     ; 100
-        dq not_def_spec  ; 101
-        dq not_def_spec       ; 102
-        times ('l' - 'f' -1) dq not_def_spec
-        dq not_def_spec       ; doubble = float
-        times ('o' - 'l' -1) dq not_def_spec
-        dq not_def_spec     ; 111
-        times ('s' - 'o' -1) dq not_def_spec
-        dq not_def_spec      ; 115
-        times ('x' - 's' -1) dq not_def_spec
-        dq not_def_spec     ; 120
-    ;}
-    ;_____________________________________________________
-    section .text
 ;}

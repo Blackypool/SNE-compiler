@@ -8,7 +8,7 @@ int asm_main(ar_get);
 
 void Asm_expression(Arg_s);
 
-const char* asm_ready_commands(int enum_of_need);
+int asm_ready_commands(int enum_of_need);
 
 void operat_ptinting(Arg_s);
 

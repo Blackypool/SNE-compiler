@@ -1,5 +1,5 @@
 jmp skip_init_scan_ff
-;===============ALIGNE===============nothing==========
+;===============SCAN_F==============nothing==========
 
 ;   Entry:      nothing
 ;   Exit:       aligned stack + scanf num in ax
@@ -31,6 +31,7 @@ M_Scanf:
  positive_sc:
  ;{
     mov dl, byte [rsp + rcx]
+
     cmp dl, '0'
     jl return_0_from_scanf
 

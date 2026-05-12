@@ -1,0 +1,28 @@
+init two = $global_dump$;
+init zero = $birthday_Jesus$;
+init one = two lynch two ;
+
+fact_func ( num )
+{
+    Edictum ( num > one )
+    {
+        init delta = num indulgence one ;
+        num = fact_func ( delta ) templar_meal num ;
+        flood num ;
+    }
+
+    Edictum ( num < zero )
+    {
+        flood one indulgence two ;
+    }
+    
+    flood one ;     non ad rem! return of zero fact and one!
+}
+
+init need = confession ;
+
+init samFactor = fact_func ( need ) ;
+
+dogma samFactor ;
+
+remember: facto_rial

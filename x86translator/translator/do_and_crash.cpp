@@ -49,6 +49,12 @@ Le_af merger(char* argv, struct A_S_T* ast)
     ast->n_omer_real_global_for_data_sec = 0;
     ////////////////////////////
 
+
+    ////////////RIP_B///////////
+    ast->labels_bin_rip = (for_bin_w_adr*)calloc(ast->max_func_user_num * 5, sizeof(for_bin_w_adr));
+    AsserT(ast->section_data == NULL, memory_aloca, NULL);
+    ////////////////////////////
+
     free(save_ptr);
 
     return root;

@@ -24,8 +24,8 @@
 #define Le_af struct leaf*
 #define ar_get struct A_S_T* ast
 
-#define Arg_s FILE* fp, Le_af leaf, ar_get
-#define arg_s fp, leaf, ast
+#define Arg_s FILE* fp, Le_af leaf, ar_get, FILE* bin_f
+#define arg_s fp, leaf, ast, bin_f
 
 
 typedef double typ_of_x;
@@ -57,6 +57,8 @@ struct znaki
     int e_num;
 
     const char* for_dump;
+
+    int bin_code;
 };
 extern struct znaki com_transl[];
 extern const size_t znaki_struct_size;
@@ -70,6 +72,13 @@ struct include_func
     int is_use_in_program;
 
     const char* name_of_file;
+};
+
+struct for_bin_w_adr
+{
+    char* name_;
+
+    size_t rip;
 };
 
 //______________________________________________________SCOPE______________________________________________________________________________//
@@ -150,6 +159,10 @@ struct A_S_T
     
     char** section_data;                    // для сохранения глобальных переменных в дате а не посередине тиэксти
     int n_omer_real_global_for_data_sec;    // для хранения строк для печати
+
+    int cur_ip;                          // адрес в бинарнике // возможно потом надо учесть в нем эпиграф бинарника
+    for_bin_w_adr* labels_bin_rip;
+    size_t free_label_for_bin_rip;
 };
 
 
@@ -246,6 +259,88 @@ enum errors_
     stack_errorr = 7,
 };
 
+enum regi_sters
+{
+    RAX = 0,
+    RCX = 1,
+    RDX = 2,
+    RBX = 3,
+    RSP = 4,
+    RBP = 5,
+    RSI = 6,
+    RDI = 7,
+};
+
+enum bin_code
+{
+    //__DIRECTIVES___//
+    B_64_BIT_DIR  = 0x48,
+    B_WORK_RR     = 0xC0,
+    B_NOP_NOP     = 0x90,
+    B_ADR_OFS     = 0x40,
+    B_MOD_LEA     = 0x00,
+    //_______________//
+
+    //____OPCODES____//
+    B_REG_MIN_NUM = 0x83,
+    B_FOR_DIV     = 0xF7,
+    B_FOR_LEA     = 0x05,
+    //_______________//
+
+
+    //______DEF______//
+    B_PUSH = 0x50,
+    B_POP  = 0x58,
+    B_CDQ  = 0x99,
+    B_LEA  = 0x8D,
+    //_______________//
+
+
+    //______MATH_____// with regs
+    B_ADD_R  = 0x01,
+    B_SUB_R  = 0x29,
+    B_AND_R  = 0x21,
+    B_XOR_R  = 0x31,
+    B_CMP_R  = 0x39,
+    B_OR_R   = 0x09,
+
+    B_IMUL_1 = 0x0F,
+    B_IMUL_2 = 0xAF,
+
+    B_IDIV   = 0b111,
+    //_______________//
+
+
+    //______MATH_____// with nums
+    B_ADD_R_N = 0x00,
+    B_SUB_R_N = 0x05,
+    //_______________//
+    
+    
+    //______JMP______//
+    B_CALL = 0xE8,
+    B_RET  = 0xC3,
+    B_JMP  = 0xEB,
+
+    B_JE   = 0x84,
+    B_JNE  = 0x85,
+    B_JG   = 0x8F,
+    B_JGE  = 0x8D,
+    B_JL   = 0x8C,
+    B_JLE  = 0x8E,
+    //_______________//
+
+    //______MOV______//
+    B_R2R = 0x89,
+    B_R2N = 0xC7,   // for rax
+
+    B_M2R = 0x8B,
+    B_R2M = 0x89,
+
+    B_FOR_EAX_REL = 0x05,
+    //_______________//
+};
+
 
 //_______________________________________________DE_B_U_G_SS_______________________________________________________________________________//
 
@@ -317,6 +412,7 @@ enum errors_
 #include "translator/AST_to_asm.h"
 #include "translator/user_insert.h"
 #include "translator/logical.h"
+#include "translator/emit_y.h"
 //////////////////////////////////////////////////
 
 #endif

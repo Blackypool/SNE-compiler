@@ -1,16 +1,17 @@
 #include "logical.h"
 
+
 //____________________________________________________JUMP_ERS____________________________________________________________________________//
 static struct znaki jumpers[] = {
 
-    {"   je", EQUAL_C},
-    {"   jne", N_EQUAL_C},
+    {"   je",   EQUAL_C,        0,  B_JE},
+    {"   jne",  N_EQUAL_C,      0,  B_JNE},
 
-    {"   jge", L_E_bigger},
-    {"   jg", L_bigger_R},
+    {"   jge",  L_E_bigger,     0,  B_JGE},
+    {"   jg",   L_bigger_R,     0,  B_JG},
 
-    {"   jle", L_E_smaller},
-    {"   jl", L_smaller_R},
+    {"   jle",  L_E_smaller,    0,  B_JLE},
+    {"   jl",   L_smaller_R,    0,  B_JL},
     
 };
 
@@ -20,13 +21,20 @@ void bear_gammy_jump_func(Arg_s)
 
     fprintf(fp, "\n ;________CMP_________");
 
-    Asm_expression(fp, leaf->left,  ast);
-    Asm_expression(fp, leaf->right, ast);
+    Asm_expression(fp, leaf->left,  ast, bin_f);
+    Asm_expression(fp, leaf->right, ast, bin_f);
 
     fprintf(fp, "\n   pop rcx");
     fprintf(fp, "\n   pop rax\n\n");
 
     fprintf(fp, "   cmp rax, rcx\n");
+
+
+    emit_pop_reg(ast, bin_f, RCX);
+    emit_pop_reg(ast, bin_f, RAX);
+
+    emit_cmp_rax_rax(ast, bin_f, RAX, RCX);
+
 
     ////////////////////////////////////
 
@@ -39,7 +47,10 @@ void bear_gammy_jump_func(Arg_s)
 
     for(size_t i = 0; i < size_of_JT_table; ++i)
         if(leaf->value.oper == (size_t)jumpers[i].e_num)
+        {
             fprintf(fp, "%s    %s\n", jumpers[i].value, label_name);
+            emit_logical_jmp(ast, bin_f, label_name, jumpers[i].bin_code);
+        }
 
     fprintf(fp, " ;____________________\n");
 }
@@ -58,7 +69,7 @@ void Asm_if_cmd(Arg_s)
     
 
     /////////////////CONDITION/////////////////////
-    Asm_expression(fp, root_of_if->left, ast);   
+    Asm_expression(fp, root_of_if->left, ast, bin_f);
     ///////////////////////////////////////////////
 
 
@@ -74,18 +85,21 @@ void Asm_if_cmd(Arg_s)
         /////////////////ELSE//////////////////
         fprintf(fp, " ; else:\n");
 
-        Asm_expression(fp, leaf->right->right, ast);
+        Asm_expression(fp, leaf->right->right, ast, bin_f);
         
         fprintf(fp, " jmp %s\n", end_of_if_label);
+        emit_jmp_call(ast, bin_f, end_of_if_label, B_JMP);
         //////////////////////////////////////
 
 
         /////////////////_IF_/////////////////
         fprintf(fp, " %s:        ; if:\n\n", name_forr_if);
+        emit_func_init(ast, name_forr_if);
 
-        Asm_expression(fp, leaf->right->left, ast);
+        Asm_expression(fp, leaf->right->left, ast, bin_f);
         
         fprintf(fp, " %s:\n", end_of_if_label);
+        emit_func_init(ast, end_of_if_label);
         //////////////////////////////////////
     }
     else
@@ -94,9 +108,13 @@ void Asm_if_cmd(Arg_s)
         fprintf(fp, " jmp %s\n", end_of_if_label);
         fprintf(fp, " %s:        ; if:\n\n", name_forr_if);
 
-        Asm_expression(fp, leaf->right, ast);
+        emit_jmp_call(ast, bin_f, end_of_if_label, B_JMP);
+        emit_func_init(ast, name_forr_if);
+
+        Asm_expression(fp, leaf->right, ast, bin_f);
         
         fprintf(fp, " %s:\n", end_of_if_label);
+        emit_func_init(ast, end_of_if_label);
         //////////////////////////////////////
     }
     ///////////////////////////////////////////////
@@ -118,22 +136,27 @@ void Asm_while_cmd(Arg_s)
     char start_of_while_[128] = {};
     snprintf(start_of_while_, sizeof(start_of_while_), "start_of_while_%s", name_forr_while);
     fprintf(fp, " %s:\n", start_of_while_);
+
+    emit_func_init(ast, start_of_while_);
     ///////////////////////////////////////////////
 
 
     /////////////////CONDITION/////////////////////
-    Asm_expression(fp, root_of_while->left, ast);   
+    Asm_expression(fp, root_of_while->left, ast, bin_f);
     ///////////////////////////////////////////////
 
 
     /////////////////////BODY//////////////////////
-    Asm_expression(fp, root_of_while->right, ast);   
+    Asm_expression(fp, root_of_while->right, ast, bin_f);
     fprintf(fp, " jmp %s", start_of_while_);
+
+    emit_jmp_call(ast, bin_f, start_of_while_, B_JMP);
     ///////////////////////////////////////////////
 
 
     /////////////////////END//////////////////////
     fprintf(fp, " %s:\n", name_forr_while);
+    emit_func_init(ast, name_forr_while);
     ///////////////////////////////////////////////
 
 
@@ -146,15 +169,10 @@ char* preparation_if_while(Arg_s)
     DE_BUG(leaf);
 
     if(ast->is_global_now == GLOBA_L)       // значит мы в ифе который в глобале => id func = -1
+    {
+        ast->num_init_in_gl_if = 0;
         ast->id_of_now_func = -1;
-
-    ///////////////NEW_SCOPE///////////////////////
-    scope_table* new_space = (scope_table*)calloc(1, sizeof(scope_table));
-    AsserT(new_space == NULL, memory_aloca, NULL);
-
-    new_space->all_param_s = (params_in_scope*)calloc(ast->max_varia_num, sizeof(params_in_scope));
-    AsserT(new_space->all_param_s == NULL, memory_aloca, NULL);
-    ///////////////////////////////////////////////
+    }
 
 
     /////////////////INITial_IF/////////////////
@@ -186,7 +204,25 @@ char* preparation_if_while(Arg_s)
         how_many_init(root_of_if, &count_of_init);
 
         if(count_of_init != 0)
-            fprintf(fp, "\n\n    push rbp       ; mini if/while in global\n    mov rbp, rsp\n\n");
+        {
+            /////////NEW_SCOPE/////////
+            scope_table* new_space = (scope_table*)calloc(1, sizeof(scope_table));
+            AsserT(new_space == NULL, memory_aloca, NULL);
+
+            new_space->all_param_s = (params_in_scope*)calloc(ast->max_varia_num, sizeof(params_in_scope));
+            AsserT(new_space->all_param_s == NULL, memory_aloca, NULL);
+
+            stack_push(ast->skope_stack, new_space);
+            ///////////////////////////
+
+            fprintf(fp, "\n\n    push rbp       ; mini if/while in global\n    mov rbp, rsp\n");
+            fprintf(fp, "sub rsp, %d\n\n", 8 * count_of_init);
+
+            emit_push_reg(ast, bin_f, RBP);
+            emit_mov_rax_rax(ast, bin_f, RBP, RSP);
+
+            emit_sub_rsp_num(ast, bin_f, (8 * count_of_init));
+        }
     }
 
     stack_push(ast->labels_names_for_if_while, stk_for_if_wh);
@@ -210,8 +246,13 @@ void last_word_from_if_wh(Arg_s, char* label_name)
     {
         if(ast->num_init_in_gl_if > 0)
         {
-            fprintf(fp, "\n   mov rbp, rsp");
+            stack_pop(ast->skope_stack);        // создааввали стек для глобального ифа
+
+            fprintf(fp, "\n   mov rsp, rbp");
             fprintf(fp, "\n   pop rbp\n");
+
+            emit_mov_rax_rax(ast, bin_f, RSP, RBP);
+            emit_pop_reg(ast, bin_f, RBP);
         }
         
         ast->id_of_now_func = -123;

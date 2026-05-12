@@ -2,8 +2,6 @@ bits 64
 section .text
 
 
-extern scanf
-
 global _start
 _start:
 
@@ -15,9 +13,7 @@ _start:
 
       pop rax
 
-   lea rcx, [rel two]        ; global param <two> takes from label
-   mov dword [rcx], eax
-;_________________________________________
+   mov [rel two], eax  ; global param <two> takes from label;_________________________________________
 
 
 ;_________INIT_zero______________
@@ -27,21 +23,15 @@ _start:
 
       pop rax
 
-   lea rcx, [rel zero]        ; global param <zero> takes from label
-   mov dword [rcx], eax
-;_________________________________________
+   mov [rel zero], eax  ; global param <zero> takes from label;_________________________________________
 
 
 ;_________INIT_one______________
 
-      lea rcx, [rel two]        ; global param <two> takes from label
-      mov eax, dword [rcx]
-
+      mov eax, [rel two]  ; global param <two> takes from label
       push rax
 
-      lea rcx, [rel two]        ; global param <two> takes from label
-      mov eax, dword [rcx]
-
+      mov eax, [rel two]  ; global param <two> takes from label
       push rax
       pop rcx
       pop rax
@@ -50,9 +40,7 @@ _start:
       push rax
       pop rax
 
-   lea rcx, [rel one]        ; global param <one> takes from label
-   mov dword [rcx], eax
-;_________________________________________
+   mov [rel one], eax  ; global param <one> takes from label;_________________________________________
 
 
 
@@ -72,13 +60,13 @@ fact_func:
    push rbp
    mov rbp, rsp
 
+sub rsp, 8
+
  ;________CMP_________
-      mov eax, [rbp + 8 + 0]        ; take [1] param = <num> for func from stack
+      mov eax, [rbp + 8 + 8]        ; take [1] param = <num> for func from stack
       push rax                       ; var printing
 
-      lea rcx, [rel one]        ; global param <one> takes from label
-      mov eax, dword [rcx]
-
+      mov eax, [rel one]  ; global param <one> takes from label
       push rax
 
    pop rcx
@@ -93,20 +81,18 @@ fact_func:
 
  ;_________INIT_delta______________
 
-      mov eax, [rbp + 8 + 0]        ; take [1] param = <num> for func from stack
+      mov eax, [rbp + 8 + 8]        ; take [1] param = <num> for func from stack
       push rax                       ; var printing
 
-      lea rcx, [rel one]        ; global param <one> takes from label
-      mov eax, dword [rcx]
-
+      mov eax, [rel one]  ; global param <one> takes from label
       push rax
       pop rcx
       pop rax
       sub eax, ecx
       push rax
 
-   pop rax                ; init ->
-   mov [rbp - 8 - 0], eax    ; go to array on stack <delta>
+pop rax
+mov [rbp - 8 - 0], rax    ; init go ta kadr
  ;_________________________________________
 
 
@@ -119,7 +105,7 @@ fact_func:
    push rax            ; вернули ret in stack
  ;____________________
 
-      mov eax, [rbp + 8 + 0]        ; take [1] param = <num> for func from stack
+      mov eax, [rbp + 8 + 8]        ; take [1] param = <num> for func from stack
       push rax                       ; var printing
       pop rcx
       pop rax
@@ -127,8 +113,8 @@ fact_func:
       push rax
       pop rax
 
-      mov [rbp + 8 + 0], eax        ; take [1] param = <num> for func from stack
-      mov eax, [rbp + 8 + 0]        ; take [1] param = <num> for func from stack
+      mov [rbp + 8 + 8], eax        ; take [1] param = <num> for func from stack
+      mov eax, [rbp + 8 + 8]        ; take [1] param = <num> for func from stack
       push rax                       ; var printing
 
    pop rax
@@ -142,12 +128,10 @@ fact_func:
 
 
  ;________CMP_________
-      mov eax, [rbp + 8 + 0]        ; take [1] param = <num> for func from stack
+      mov eax, [rbp + 8 + 8]        ; take [1] param = <num> for func from stack
       push rax                       ; var printing
 
-      lea rcx, [rel zero]        ; global param <zero> takes from label
-      mov eax, dword [rcx]
-
+      mov eax, [rel zero]  ; global param <zero> takes from label
       push rax
 
    pop rcx
@@ -160,14 +144,10 @@ fact_func:
  label_1:        ; if:
 
 
-      lea rcx, [rel one]        ; global param <one> takes from label
-      mov eax, dword [rcx]
-
+      mov eax, [rel one]  ; global param <one> takes from label
       push rax
 
-      lea rcx, [rel two]        ; global param <two> takes from label
-      mov eax, dword [rcx]
-
+      mov eax, [rel two]  ; global param <two> takes from label
       push rax
       pop rcx
       pop rax
@@ -184,9 +164,7 @@ fact_func:
     ;______________
 
 
-      lea rcx, [rel one]        ; global param <one> takes from label
-      mov eax, dword [rcx]
-
+      mov eax, [rel one]  ; global param <one> takes from label
       push rax
 
    pop rax
@@ -204,7 +182,7 @@ fact_func_skip_init:
 
 ;_________INIT_need______________
 jmp skip_init_scan_ff
-;===============ALIGNE===============nothing==========
+;===============SCAN_F==============nothing==========
 
 ;   Entry:      nothing
 ;   Exit:       aligned stack + scanf num in ax
@@ -236,6 +214,7 @@ M_Scanf:
  positive_sc:
  ;{
     mov dl, byte [rsp + rcx]
+
     cmp dl, '0'
     jl return_0_from_scanf
 
@@ -260,27 +239,18 @@ M_Scanf:
 skip_init_scan_ff:
 ;_____________________________________________________
 
-      lea rdi, [rel format]
-
-      lea rsi, [rel num]
-
 call M_Scanf
 
-      mov eax, dword [rel num]
       push rax
       pop rax
 
-   lea rcx, [rel need]        ; global param <need> takes from label
-   mov dword [rcx], eax
-;_________________________________________
+   mov [rel need], eax  ; global param <need> takes from label;_________________________________________
 
 
 ;_________INIT_samFactor______________
 
  ;_______FUNC_USE_____
-      lea rcx, [rel need]        ; global param <need> takes from label
-      mov eax, dword [rcx]
-
+      mov eax, [rel need]  ; global param <need> takes from label
       push rax
    call fact_func
    add rsp, 8        ; skip push params 
@@ -288,22 +258,10 @@ call M_Scanf
  ;____________________
       pop rax
 
-   lea rcx, [rel samFactor]        ; global param <samFactor> takes from label
-   mov dword [rcx], eax
-;_________________________________________
+   mov [rel samFactor], eax  ; global param <samFactor> takes from label;_________________________________________
 
 ;__________INIT_BIG_PRINTF__________
 ;{    
-    ; +-inf // switch_jump_t // float*(-1) // call printf // one func b_o_x
-
-    ;           b   c   d    f    o    s    x   
-    ;           98  99  100  102  111  115  120
-
-    ; lldb-20  a.out -> run
-    ; nasm -f elf64 -l Float_supp.lst Float_supp.s  ;  ld -s -o a.out Float_supp.o
-
-    ; RIP-relative addressing  //  rip = now command => pie: now + msg = [rel msg]  //  Position Independent Executable = PIE
-
     jmp skip_init_of_M_printf_s
     ;===============M_printf_s===============cdecle=======
 
@@ -333,38 +291,7 @@ call M_Scanf
         push rdx        ; to save in buff               [BP - 32]
         push rsi        ; use in tempure calc in jt     [BP - 40]
     ;
-    cmp al, 0
-    je skip_xmm_N    ; float is not exist
-    ; float params in regs, start from [BP - 8 * 8 - 40(int params) + R13]        // r13 <= 8*8
-    ;______________
-        xor r13, r13    ; r13 = for float regs
 
-        movq r8, xmm7
-        push r8         ; [BP - 48]
-    
-        movq r8, xmm6
-        push r8         ; [BP - 56]
-
-        movq r8, xmm5
-        push r8         ; [BP - 64]
-
-        movq r8, xmm4
-        push r8         ; [BP - 72]
-
-        movq r8, xmm3
-        push r8         ; [BP - 80]
-
-        movq r8, xmm2
-        push r8         ; [BP - 88]
-
-        movq r8, xmm1
-        push r8         ; [BP - 96]
-
-        movq r8, xmm0
-        push r8         ; [BP - 104]
-    ;______________
-        
-        skip_xmm_N:
     ; prepare_s
         xor r8, r8                      ; flag for not need use float in dec in start before find float
         lea rdx, [rel what_prntf]       ; DX = start of buff with result // relative(относительная) addressing
@@ -574,11 +501,11 @@ call M_Scanf
         jmp next_shag_of_dec
 
 
-    _default_dec:
+     _default_dec:
         mov r11, 1                  ; flag of start zeros
         mov rsi, 10000000000        ; 10znak max
 
-    next_shag_of_dec:
+     next_shag_of_dec:
         mov r15, rdx                ; rdx need for DIV ((
 
         mov rdi, rdx                ; for check only one zero
@@ -621,14 +548,14 @@ call M_Scanf
                 jmp need_zero_d
         ;}
 
-    endi_of_d:
+     endi_of_d:
         cmp rdi, r15
         jne tochno_end
 
         mov byte [r15], '0'
         inc r15
 
-    tochno_end:
+     tochno_end:
         mov rdx, r15
 
         pop r15
@@ -646,36 +573,8 @@ call M_Scanf
 
     ;=====================================================
     skip_init_of_M_printf_s:
-
-    ;_____________________________________________________
-    section .data
-    ;{
-        ; buff with end of printfing
-        what_prntf times 1024 db 0
-
-        ; jt:
-        align 8
-    Springboard:
-        dq not_def_spec      ; 98
-        dq not_def_spec        ; 99
-        dq d_decimal     ; 100
-        dq not_def_spec  ; 101
-        dq not_def_spec       ; 102
-        times ('l' - 'f' -1) dq not_def_spec
-        dq not_def_spec       ; doubble = float
-        times ('o' - 'l' -1) dq not_def_spec
-        dq not_def_spec     ; 111
-        times ('s' - 'o' -1) dq not_def_spec
-        dq not_def_spec      ; 115
-        times ('x' - 's' -1) dq not_def_spec
-        dq not_def_spec     ; 120
-    ;}
-    ;_____________________________________________________
-    section .text
 ;}
-      lea rcx, [rel samFactor]        ; global param <samFactor> takes from label
-      mov eax, dword [rcx]
-
+      mov eax, [rel samFactor]  ; global param <samFactor> takes from label
       push rax
 
       pop rsi
@@ -709,6 +608,12 @@ samFactor:
 	dd   0
 
 format db "%d", 10, 0
+what_prntf times 1024 db 0
+                align 8
+            Springboard:
+                dq not_def_spec  ; 98
+                dq not_def_spec  ; 99
+                dq d_decimal     ; 100
 
 
 section .bss

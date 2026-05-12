@@ -70,11 +70,16 @@ void Asm_init_varia(Arg_s)
     {
         fprintf(fp, "\n;_________INIT_%s______________\n", name_of_var);
 
-        Asm_expression(fp, val_ue, ast);
-        fprintf(fp, "      pop rax\n");
 
-        fprintf(fp, "\n   lea rcx, [rel %s]        ; global param <%s> takes from label", name_of_var, name_of_var);
-        fprintf(fp, "\n   mov dword [rcx], eax\n");
+        Asm_expression(fp, val_ue, ast, bin_f);
+
+        fprintf(fp, "      pop rax\n");
+        emit_pop_reg(ast, bin_f, RAX);
+
+
+        fprintf(fp, "\n   mov [rel %s], eax  ; global param <%s> takes from label", name_of_var, name_of_var);
+        emit_mov_eax_mem_offset_swap_REL(ast, bin_f, RAX, (char*)name_of_var, B_R2M);
+
 
         fprintf(fp, ";_________________________________________\n\n");
 
@@ -93,10 +98,14 @@ void Asm_init_varia(Arg_s)
         fprintf(fp, "\n ;_________INIT_%s______________\n", name_of_var);
 
         ///////////////////////
-        Asm_expression(fp, val_ue, ast);  
-     
-        fprintf(fp, "\n   pop rax                ; init ->");        // первый параметр в рбп + 8   
-        fprintf(fp, "\n   mov [rbp - 8 - %d], eax    ; go to array on stack <%s>\n", (8 * param_array->all_param_s[now_par].offset_in_loca_l), nick_name->value.x);
+        Asm_expression(fp, val_ue, ast, bin_f);
+
+        fprintf(fp, "\npop rax\n");
+        emit_pop_reg(ast, bin_f, RAX);
+
+        int off_set = 8 * param_array->all_param_s[now_par].offset_in_loca_l;
+        fprintf(fp, "mov [rbp - 8 - %d], rax    ; init go ta kadr\n", off_set);
+        emit_mov_eax_mem_offset_swap(ast, bin_f, RAX, (-8 - off_set), B_R2M);
         ///////////////////////
 
         fprintf(fp, " ;_________________________________________\n\n");
@@ -119,8 +128,14 @@ void var_printing(Arg_s)
 
     if(varia_stk->is_it_func_param == YES_IT_IS)
     {
-        fprintf(fp, "\n      mov eax, [rbp + 8 + %d]        ; take [%d] param = <%s> for func from stack", (8 * varia_stk->call_number), (varia_stk->call_number + 1), name);
+        int par_ams = (int)ast->all_func[ast->id_of_now_func].amount_of_params;
+        int offset = par_ams - varia_stk->call_number;
+
+        fprintf(fp, "\n      mov eax, [rbp + 8 + %d]        ; take [%d] param = <%s> for func from stack", (8 * offset), (varia_stk->call_number + 1), name);
         fprintf(fp, "\n      push rax                       ; var printing\n");
+
+        emit_mov_eax_mem_offset_swap(ast, bin_f, RAX, (8 + 8*offset), B_M2R);
+        emit_push_reg(ast, bin_f, RAX);
 
         free(name);
 
@@ -130,14 +145,17 @@ void var_printing(Arg_s)
 
     if(varia_stk->is_global == GLOBA_L)
     {
-        fprintf(fp, "\n      lea rcx, [rel %s]        ; global param <%s> takes from label", name, name);
-        fprintf(fp, "\n      mov eax, dword [rcx]\n");
+        fprintf(fp, "\n      mov eax, [rel %s]  ; global param <%s> takes from label", name, name);
+        emit_mov_eax_mem_offset_swap_REL(ast, bin_f, RAX, name, B_M2R);
     }
     else                    // func + gl_if
+    {
         fprintf(fp, "\n      mov eax, [rbp - 8 - %d]        ; local param <%s> eat from stack mem\n", (8 * varia_stk->offset_in_loca_l), name);
-
+        emit_mov_eax_mem_offset_swap(ast, bin_f, RAX, (-8 - 8*(varia_stk->offset_in_loca_l)), B_M2R);
+    }
 
     fprintf(fp, "\n      push rax\n");
+    emit_push_reg(ast, bin_f, RAX);
     
     free(name);
 }
@@ -181,17 +199,22 @@ void func_user_ptinting(Arg_s)
     ////////PUSH_ARGS///////////
     fprintf(fp, "\n ;_______FUNC_USE_____");
 
-    Asm_get_args_(fp, leaf->left, ast);
+    Asm_get_args_(fp, leaf->left, ast, bin_f);
     ////////////////////////////
 
     stack_pop(ast->skope_stack);
 
     ///////////CALL/////////////
     fprintf(fp, "   call %s\n", func_name);
+    emit_jmp_call(ast, bin_f, func_name, B_CALL);
+
 
     fprintf(fp, "   add rsp, %zu        ; skip push params \n", (8 * func_struct->amount_of_params));
+    emit_add_rsp_num(ast, bin_f, (int)(8 * func_struct->amount_of_params));
+
 
     fprintf(fp, "   push rax            ; вернули ret in stack\n");
+    emit_push_reg(ast, bin_f, RAX);
 
     fprintf(fp, " ;____________________\n");
     ////////////////////////////
@@ -221,12 +244,12 @@ void Asm_get_args_(Arg_s)
 
     if(leaf->type == OPERAT && leaf->value.oper == ZAPYTAYA)
     {
-        Asm_get_args_(fp, leaf->left, ast);
-        Asm_get_args_(fp, leaf->right, ast);
+        Asm_get_args_(fp, leaf->left, ast, bin_f);
+        Asm_get_args_(fp, leaf->right, ast, bin_f);
     }
 
     else
-        Asm_expression(fp, leaf, ast);
+        Asm_expression(fp, leaf, ast, bin_f);
 }
 //________________________________________________________________________________________________________________________________________//
 
@@ -249,6 +272,7 @@ void user_oper_init(Arg_s)
     Le_af connect = leaf->right;
     Le_af body = connect->right;
 
+
     ////////////save____func////////////
     int func_id = (int)ast->index_of_last_add_func;
     ast->all_func[func_id].name_of_func = strdup(name_of_func->value.us_op);
@@ -257,6 +281,7 @@ void user_oper_init(Arg_s)
     ast->id_of_now_func = func_id;
     ast->all_func[func_id].now_num_var = 0;
     ////////////////////////////////////
+
 
     ////////////NUM_PARAM///////////////
     Le_af param = connect->left;
@@ -270,8 +295,12 @@ void user_oper_init(Arg_s)
     ast->all_func[func_id].amount_of_params = (size_t)num_params_in_func;
     ////////////////////////////////////
 
+
     ////////////////INFO////////////////
-    fprintf(fp, "\n\njmp %s_skip_init\n", name_of_func->value.us_op); 
+    char* name_ = (char*)name_of_func->value.us_op;
+
+    fprintf(fp, "\n\njmp %s_skip_init\n", name_); 
+    emit_jmp_call(ast, bin_f, name_, B_JMP);
 
     fprintf(fp, "\n;===============%s===============cdecle=======\
                 \n\
@@ -282,26 +311,44 @@ void user_oper_init(Arg_s)
                 \n\
                 \n;=====================================================\n\n", ast->all_func[func_id].name_of_func, ast->all_func[func_id].amount_of_params);
     
-    fprintf(fp, "%s:\n;{\n", name_of_func->value.us_op);  
+    fprintf(fp, "%s:\n;{\n", name_);  
+
+    emit_func_init(ast, name_);
     ////////////////////////////////////
+
 
     /////////////SCOPE_UPD//////////////
     ast->all_func[func_id].argument_s_for_scope_push = func_open_space(connect, ast, num_params_in_func);
     stack_push(ast->skope_stack, ast->all_func[func_id].argument_s_for_scope_push);
     ////////////////////////////////////
 
+
     //////////////PREFIX////////////////
     fprintf(fp, "   push rbp\n");
     fprintf(fp, "   mov rbp, rsp\n");
+
+    emit_push_reg(ast, bin_f, RBP);
+    emit_mov_rax_rax(ast, bin_f, RBP, RSP);
+
+
+    int count_of_init = 0;
+    how_many_init(connect, &count_of_init);
+
+    fprintf(fp, "\nsub rsp, %d\n", 8 * count_of_init);
+    emit_sub_rsp_num(ast, bin_f, (8 * count_of_init));
     ////////////////////////////////////
 
+
     ///////////////BODY/////////////////
-    Asm_expression(fp, body, ast);      
+    Asm_expression(fp, body, ast, bin_f);
     // pop rbp + ret
     ////////////////////////////////////
 
+
     ////////////////END/////////////////
-    fprintf(fp, "\n;}\n%s_skip_init:\n\n;_____________________________________________________\n\n", name_of_func->value.us_op);  
+    fprintf(fp, "\n;}\n%s_skip_init:\n\n;_____________________________________________________\n\n", name_); 
+    emit_func_init(ast, name_);
+    
     stack_pop(ast->skope_stack);
     ////////////////////////////////////
 
