@@ -8,6 +8,12 @@ jmp skip_init_sq_rt_func
 
 ;=====================================================
 
+nop
+nop
+nop
+nop
+nop
+
 sq_rt:
 ;{
     cvtsi2sd xmm0, rdi

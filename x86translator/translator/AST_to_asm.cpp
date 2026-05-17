@@ -1,35 +1,59 @@
 #include "AST_to_asm.h"
 
-// инклуд надо делать в самом низу типо выставлять флаг что да вызывали и только в конце дописывать это
-// двух прохадка для бинарника
 
-// ошибка плоского стека вместе с ифом 
-// если инит в елсе тогда не надо учитывать иниты ифа бляяя // точнее пушить мусор если в ифе был какой-то инит а перешли в елс
-// то есть изначально создавать мусор в стеке? типо выделятьб массив?
+// ошибка плоского стека вместе с ифом == в елсе нельзя такое же название что и в ифе
+// пустить поиск в обратную сторону 
 
-// создавать массив на стеке равный количесву инитов и обращаться к ним через мув [] и тогда будет общий стек для ифа и елса который не перемешаетс
+// in imul r == l and l == r
+
+
+// метка формат будет неопределена!!! в леа принтфа 
+
 
 
 //_____________________________________________________START______________________________________________________________________________//
+int first_zapusk = 0;
+
+static struct include_func include[] = {
+
+    {"A_0_0_0",   PRINT_F,    NO_ITS_NO,  "standart_func/printf"  , "M_printf_s", 576},
+    {"A_1_1_1",   SCAN_C,     NO_ITS_NO,  "standart_func/scanf"   , "M_Scanf"   , 89},
+    {"A_2_2_2",   SQRT_C,     NO_ITS_NO,  "standart_func/sq_rt"   , "sq_rt"     , 16},
+    {"A_3_3_3",   POW_C,      NO_ITS_NO,  "standart_func/pow_func", "pow_func"  , 21},
+
+};
+
+void init_struct_of_include()
+{
+    size_t size_of_include_func = sizeof(include) / sizeof(include[0]);
+
+    for(size_t i = 0; i < size_of_include_func; i++)
+    {
+        char bin_name[128] = {};
+        snprintf(bin_name, sizeof(bin_name), "%s.bin", include[i].name_of_file);
+    
+        include[i].size_of_bin_file = (int)number__file((const char*)bin_name);
+    }
+}
+
+
 int asm_main(ar_get)
 {
     AsserT(ast == NULL, give_null_ptr, give_null_ptr);
 
-    FILE* fp = fopen(ast->end_file_name, "w");
-    AsserT(fp == NULL, file_errorr, file_errorr);
+    struct A_S_T ast_reserve = {0};
+    memcpy(&ast_reserve, ast, sizeof(*ast));
 
-    FILE* bin_f = fopen("first.bin", "wb");
-    AsserT(bin_f == NULL, file_errorr, file_errorr);
+
+    /////////////////FILE_O////////////////////////
+    FILE* fp = NULL;
+    FILE* bin_f = NULL;
+    open_files(ast, &fp, &bin_f);
+    ///////////////////////////////////////////////
 
 
     //////////////////START////////////////////////
-    ast->is_global_now = GLOBA_L;
-
-    elf_generator(bin_f);
-
-    fprintf(fp, "bits 64\n");
-    fprintf(fp, "section .text\n\n\n");
-    fprintf(fp, "global _start\n_start:\n\n");
+    prolog_nasm(ast, fp, bin_f);
     ///////////////////////////////////////////////
 
 
@@ -39,35 +63,127 @@ int asm_main(ar_get)
 
 
     ////////////////////END////////////////////////
-    fprintf(fp, "\n\n; _______________________\n;return 0;\nmov rax, 60\nmov rdi, 0\nsyscall");
+    epilog_nasm(ast, fp, bin_f);
     ///////////////////////////////////////////////
 
 
     ////////////////////DATA///////////////////////
-    fprintf(fp, "\n\nsection .data\n");
-    for(size_t i = 0; i < ast->max_varia_num; i++)
-        if(ast->section_data[i] != NULL)
-            fprintf(fp, "%s", ast->section_data[i]);
-
-    fprintf(fp, "\nformat db \"%%d\", 10, 0\n");        // format for printf+scanf
-
-    fprintf(fp, "what_prntf times 1024 db 0\n\
-                align 8\n\
-            Springboard:\n\
-                dq not_def_spec  ; 98\n\
-                dq not_def_spec  ; 99\n\
-                dq d_decimal     ; 100\n");
-
-
-    fprintf(fp, "\n\nsection .bss\n");
-    fprintf(fp, "\n    num resd 1\n");                  // for scanf 
+    data_nasm(ast, fp, bin_f);
+    fclose(fp);
+    fclose(bin_f);
     ///////////////////////////////////////////////
 
-    
-    fclose(fp);
+
+    ///////////////////RE_START////////////////////
+    if(first_zapusk == 0)
+    {
+        for(size_t i = 0; i < ast->free_label_for_bin_rip; i++) // save labels for second go
+        {
+            ast_reserve.labels_bin_rip[i].name_ = strdup(ast->labels_bin_rip[i].name_);
+            ast_reserve.labels_bin_rip[i].rip = ast->labels_bin_rip[i].rip;
+        }
+        ast_reserve.cur_ip = ast->cur_ip;
+
+        renessans_for_bin(&ast_reserve);
+    }
+    ///////////////////////////////////////////////
+
 
     return 1;
 }
+
+
+void open_files(ar_get, FILE** fp, FILE** bin_f)
+{
+    char end_file[150] = {};
+    snprintf(end_file, sizeof(end_file), "A_skompile_result/%s.asm", ast->end_file_name);
+
+    *fp = fopen((const char*)end_file, "w");
+    AsserT(*fp == NULL, file_errorr, );
+
+    snprintf(end_file, sizeof(end_file), "%s.bin", ast->end_file_name);
+    *bin_f = fopen(end_file, "wb");
+    AsserT(*bin_f == NULL, file_errorr, );
+}
+
+void prolog_nasm(ar_get, FILE* fp, FILE* bin_f)
+{
+    ast->is_global_now = GLOBA_L;
+
+    int need_add_size = 0;
+    size_t size_of_include_func = sizeof(include) / sizeof(include[0]); // need add in jt if use in first go + add dop size in eld
+    
+    for(size_t i = 0; i < size_of_include_func; i++)
+        if(include[i].is_use_in_program == YES_IT_IS)
+            need_add_size = need_add_size + include[i].size_of_bin_file;
+
+    // elf_generator(ast, bin_f, need_add_size);
+    ast->cur_ip = 0; // чтобы он сохранился при создании эльфа
+
+    fprintf(fp, "bits 64\n");
+    fprintf(fp, "section .text\n\n\n");
+    fprintf(fp, "global _start\n_start:\n\n");
+    
+
+    ///////////////////J___T///////////////////////
+    fprintf(fp, "jmp skip_jmp_table\n");
+    emit_jmp_call(ast, bin_f, "skip_jmp_table", B_JMP);
+
+    for(size_t i = 0; i < size_of_include_func; i++)
+    {
+        char for_JT[64] = {};
+        snprintf(for_JT, sizeof(for_JT), "A_%zu_%zu_%zu", i, i, i);
+        emit_func_init(ast, (const char*)for_JT);
+
+        //////////////  add later in patcher
+        emit_byte(ast, bin_f, B_JMP);
+        emit_4_byte(ast, bin_f, 0x52 + (int)i);
+        //////////////
+
+        if(include[i].is_use_in_program == YES_IT_IS)   // для насма важно существавание меток
+            fprintf(fp, "%s:\n   jmp %s\n", for_JT, include[i].name_for_jmp_table);
+
+        include[i].is_use_in_program = NO_ITS_NO;
+    }
+
+    fprintf(fp, "skip_jmp_table:\n\n");
+    emit_func_init(ast, "skip_jmp_table");
+    ///////////////////////////////////////////////
+}
+
+void epilog_nasm(ar_get, FILE* fp, FILE* bin_f)
+{
+    fprintf(fp, "\n\n; _______________________\n;return 0;\nmov rax, 60\nmov rdi, 0\nsyscall");
+    emit_mov_rax_num(ast, bin_f, RAX, 60);
+    emit_mov_rax_num(ast, bin_f, RDI, 0);
+    emit_syscall(ast, bin_f);
+}
+
+void data_nasm(ar_get, FILE* fp, FILE* bin_f)
+{
+    if(include[0].is_use_in_program == YES_IT_IS)       // инклудим перед датой 
+            emit_include_st_f(ast, include[0].name_of_file, bin_f);
+
+    fprintf(fp, "\n\nsection .data\n");
+
+    for(size_t i = 0; i < ast->max_varia_num; i++)
+        if(ast->section_data[i] != NULL)
+        {
+            fprintf(fp, "\n%s:\n\tdd   %d\n", ast->section_data[i], 0);
+
+            emit_func_init(ast, ast->section_data[i]);
+            emit_4_byte(ast, bin_f, 0);     // reserve for shr data for gl par
+        }
+}
+
+void renessans_for_bin(ar_get)
+{
+    first_zapusk = 228;
+
+    int err = asm_main(ast);
+    AsserT(err < 0, err, );
+}
+
 
 void Asm_expression(Arg_s)
 {
@@ -212,15 +328,6 @@ void operat_ptinting(Arg_s)
 
 
 //____________________________________________________STANDART____________________________________________________________________________//
-static struct include_func include[] = {
-
-    {"call M_printf_s", PRINT_F,    NO_ITS_NO,  "standart_func/printf.asm"  },
-    {"call M_Scanf",    SCAN_C,     NO_ITS_NO,  "standart_func/scanf.asm"   },
-    {"call sq_rt",      SQRT_C,     NO_ITS_NO,  "standart_func/sq_rt.asm"   },
-    {"call pow_func",   POW_C,      NO_ITS_NO,  "standart_func/pow_func.asm"},
-
-};
-
 int search_num_in_jt(int enum_of_need)  // возвращает номер в структуре, он же джамп и тп
 {
     int num_of_include = (int)(sizeof(include) / sizeof(include[0]));
@@ -236,11 +343,17 @@ void _include_func_(Arg_s, int include_com)
 {
     if(include[include_com].is_use_in_program == NO_ITS_NO)
     {
-        char* include_d = file__read(include[include_com].name_of_file);
+        char asm_name[128] = {};
+        snprintf(asm_name, sizeof(asm_name), "%s.asm", include[include_com].name_of_file);
+    
+        char* include_d = file__read((const char*)asm_name);
         fprintf(fp, "%s", include_d);
         free(include_d);
 
         include[include_com].is_use_in_program = YES_IT_IS;
+
+        if(include[include_com].e_num != PRINT_F)   // у всех инклуд функций кроме принтфа нету даты, поэтому принт в конце вставим чтобы не перемешивать дату и текст
+            emit_include_st_f(ast, include[include_com].name_of_file, bin_f);
     }
 
     switch(include[include_com].e_num)
@@ -251,29 +364,44 @@ void _include_func_(Arg_s, int include_com)
             // rsi = , num);
             Asm_expression(fp, leaf->left, ast, bin_f);
 
-            fprintf(fp, "\n      pop rsi");
-            fprintf(fp, "\n      lea rdi, [rel format]");
+
+            fprintf(fp, "\n      pop rsi"); // в rdi всегда %d из формата принтфа инклуднутого
             fprintf(fp, "\n      xor rax, rax");
 
-            fprintf(fp, "\n%s\n\n", include[include_com].value);
+            emit_pop_reg(ast, bin_f, RSI);
+            emit_xor_rax_rax(ast, bin_f, RAX);
+
+
+            fprintf(fp, "\ncall %s   ; %s\n\n", include[include_com].value, include[include_com].name_for_jmp_table);
+
+            emit_jmp_call(ast, bin_f, include[include_com].value, B_CALL);
         }
         break;
 
         case SCAN_C:
         {
-            fprintf(fp, "\n%s\n", include[include_com].value);
+            fprintf(fp, "\ncall %s   ; %s\n", include[include_com].value, include[include_com].name_for_jmp_table);
             fprintf(fp, "\n      push rax\n");
+
+            emit_jmp_call(ast, bin_f, include[include_com].value, B_CALL);
+            emit_push_reg(ast, bin_f, RAX);
         }
         break;
 
         case SQRT_C:
         {
             Asm_expression(fp, leaf->left, ast, bin_f);
+
             fprintf(fp, "\n      pop rdi");
+            emit_pop_reg(ast, bin_f, RDI);
 
-            fprintf(fp, "\n%s\n", include[include_com].value);
 
-            fprintf(fp, "\n      push rax");
+            fprintf(fp, "\ncall %s   ; %s\n", include[include_com].value, include[include_com].name_for_jmp_table);
+            emit_jmp_call(ast, bin_f, include[include_com].value, B_CALL);
+
+
+            fprintf(fp, "\n      push rax\n");
+            emit_push_reg(ast, bin_f, RAX);
         }
         break;
 
@@ -282,12 +410,20 @@ void _include_func_(Arg_s, int include_com)
             Asm_expression(fp, leaf->left, ast , bin_f);    // == base
             Asm_expression(fp, leaf->right, ast, bin_f);    // == degr
 
+
             fprintf(fp, "\n      pop rsi");
             fprintf(fp, "\n      pop rdi");
 
-            fprintf(fp, "\n%s\n", include[include_com].value);
+            emit_pop_reg(ast, bin_f, RSI);
+            emit_pop_reg(ast, bin_f, RDI);
+
+
+            fprintf(fp, "\ncall %s   ; %s\n", include[include_com].value, include[include_com].name_for_jmp_table);
+            emit_jmp_call(ast, bin_f, include[include_com].value, B_CALL);
+
 
             fprintf(fp, "\n      push rax\n");
+            emit_push_reg(ast, bin_f, RAX);
         }
         break;
     

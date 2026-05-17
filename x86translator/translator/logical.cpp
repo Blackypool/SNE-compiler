@@ -120,7 +120,7 @@ void Asm_if_cmd(Arg_s)
     ///////////////////////////////////////////////
     
 
-    last_word_from_if_wh(arg_s, name_forr_if);
+    last_word_from_if_wh(fp, ast, bin_f, name_forr_if);
 }
 
 void Asm_while_cmd(Arg_s)
@@ -160,7 +160,7 @@ void Asm_while_cmd(Arg_s)
     ///////////////////////////////////////////////
 
 
-    last_word_from_if_wh(arg_s, name_forr_while);
+    last_word_from_if_wh(fp, ast, bin_f, name_forr_while);
 }
 //________________________________________________________________________________________________________________________________________//
 
@@ -230,14 +230,12 @@ char* preparation_if_while(Arg_s)
     return strdup(name_forr_if);
 }
     
-void last_word_from_if_wh(Arg_s, char* label_name)
-{
-    DE_BUG(leaf);
-    
+void last_word_from_if_wh(FILE* fp, ar_get, FILE* bin_f, char* label_name)
+{    
     scope_table* stk_for_if_wh = stack_pop(ast->labels_names_for_if_while);
 
     // debug
-    fprintf(stderr, "\n|GL = %d| |LO = %d|\n\ncheck NOW localnost = %d     \ncheck PREV localnost = %d     \n\n", GLOBA_L, LOCA_L, ast->is_global_now, stk_for_if_wh->all_param_s[0].is_global);
+    // fprintf(stderr, "\n|GL = %d| |LO = %d|\n\ncheck NOW localnost = %d     \ncheck PREV localnost = %d     \n\n", GLOBA_L, LOCA_L, ast->is_global_now, stk_for_if_wh->all_param_s[0].is_global);
     //
 
     ast->is_global_now = stk_for_if_wh->all_param_s[0].is_global;

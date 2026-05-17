@@ -10,6 +10,12 @@
 
     ;=====================================================
 
+    nop
+    nop
+    nop
+    nop
+    nop
+
     M_printf_s:
     ;{
         ;ret                            ; [BP + 32]
@@ -33,7 +39,8 @@
     ; prepare_s
         xor r8, r8                      ; flag for not need use float in dec in start before find float
         lea rdx, [rel what_prntf]       ; DX = start of buff with result // relative(относительная) addressing
-        mov rcx, rax                    ; al = count for float numbers in regs--> cl
+        lea rdi, [rel format]           ; для бинарника надо
+        mov rcx, rax                    ; al = count for float numbers in regs--> cl    // what_prntf
     ;
     while_sl_zero:
 
@@ -163,9 +170,13 @@
         cmp rax, 'x'                ; if al > x
         jg not_def_spec
 
-        lea rsi, [rel Springboard]  ; rsi = offset+ip = full adr of jt 
+        sub al, 'b'
 
-        jmp [rsi + 8 * (rax - 'b')] ; jt
+        lea rsi, [rel Springboard]
+        movsxd rax, dword [rsi + rax*8]
+        add rsi, rax
+
+        jmp rsi
 
         not_def_spec:
         ;{
@@ -312,3 +323,14 @@
     ;=====================================================
     skip_init_of_M_printf_s:
 ;}
+
+section .data
+format db "%d", 10, 0
+what_prntf times 12 db 0
+                align 8
+            Springboard:
+                dq (not_def_spec - Springboard)  ; 98
+                dq (not_def_spec - Springboard)  ; 99
+                dq (d_decimal - Springboard)     ; 100
+
+section .text

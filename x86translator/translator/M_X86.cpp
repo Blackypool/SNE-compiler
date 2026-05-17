@@ -8,12 +8,13 @@ int main(int argc, char* argv[])
     struct A_S_T ast = {0};
     
     Le_af root = merger(argv[1], &ast);
-////////////////////////////
     
+    ////////////////////////////
+    init_struct_of_include();
     int err = asm_main(&ast);
     AsserT(err < 0, err, 0);
-
-////////////////////////////
+    ////////////////////////////
+    
     fell_a_root(&root);
 
     return 0;

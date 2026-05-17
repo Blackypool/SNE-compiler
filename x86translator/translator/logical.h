@@ -14,7 +14,7 @@ char* preparation_if_while(Arg_s);
 
 void how_many_init(Le_af root_of_if, int* count);
 
-void last_word_from_if_wh(Arg_s, char* label_name);
+void last_word_from_if_wh(FILE* fp, ar_get, FILE* bin_f, char* label_name);
 
 
 #endif

@@ -1,14 +1,13 @@
 #include "do_and_crash.h"
 
+
 Le_af merger(char* argv, struct A_S_T* ast)
 {
     ////////FILE_NAMES//////////
     char name_of_file[120] = {};
     snprintf(name_of_file, sizeof(name_of_file), "programs/%s.txt", argv);
 
-    char tree_asm_name[150] = {};
-    snprintf(tree_asm_name, sizeof(tree_asm_name), "A_skompile_result/%s.asm", argv);
-    ast->end_file_name = tree_asm_name;
+    ast->end_file_name = argv;
     ////////////////////////////
 
 

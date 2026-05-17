@@ -5,6 +5,15 @@ section .text
 global _start
 _start:
 
+jmp skip_jmp_table
+A_0_0_0:
+   jmp M_printf_s
+A_1_1_1:
+   jmp M_Scanf
+A_2_2_2:
+   jmp sq_rt
+skip_jmp_table:
+
 
 ;_________INIT_two______________
 
@@ -118,6 +127,12 @@ jmp skip_init_scan_ff
 
 ;=====================================================
 
+nop
+nop
+nop
+nop
+nop
+
 M_Scanf:
 ;{
     sub rsp, 32                 ; massiva on stack
@@ -166,7 +181,7 @@ M_Scanf:
 skip_init_scan_ff:
 ;_____________________________________________________
 
-call M_Scanf
+call A_1_1_1   ; M_Scanf
 
       push rax
       pop rax
@@ -176,7 +191,7 @@ call M_Scanf
 
 ;_________INIT_B______________
 
-call M_Scanf
+call A_1_1_1   ; M_Scanf
 
       push rax
       pop rax
@@ -186,7 +201,7 @@ call M_Scanf
 
 ;_________INIT_C______________
 
-call M_Scanf
+call A_1_1_1   ; M_Scanf
 
       push rax
       pop rax
@@ -263,6 +278,12 @@ jmp skip_init_sq_rt_func
 
 ;=====================================================
 
+nop
+nop
+nop
+nop
+nop
+
 sq_rt:
 ;{
     cvtsi2sd xmm0, rdi
@@ -278,9 +299,10 @@ skip_init_sq_rt_func:
       push rax
 
       pop rdi
-call sq_rt
+call A_2_2_2   ; sq_rt
 
       push rax
+
 pop rax
 mov [rbp - 8 - 8], rax    ; init go ta kadr
  ;_________________________________________
@@ -382,6 +404,12 @@ mov [rbp - 8 - 16], rax    ; init go ta kadr
 
     ;=====================================================
 
+    nop
+    nop
+    nop
+    nop
+    nop
+
     M_printf_s:
     ;{
         ;ret                            ; [BP + 32]
@@ -405,7 +433,7 @@ mov [rbp - 8 - 16], rax    ; init go ta kadr
     ; prepare_s
         xor r8, r8                      ; flag for not need use float in dec in start before find float
         lea rdx, [rel what_prntf]       ; DX = start of buff with result // relative(относительная) addressing
-        mov rcx, rax                    ; al = count for float numbers in regs--> cl
+        mov rcx, rax                    ; al = count for float numbers in regs--> cl    // what_prntf
     ;
     while_sl_zero:
 
@@ -684,6 +712,18 @@ mov [rbp - 8 - 16], rax    ; init go ta kadr
     ;=====================================================
     skip_init_of_M_printf_s:
 ;}
+
+section .data
+format db "%d", 10, 0
+what_prntf times 12 db 0
+                align 8
+            Springboard:
+                dq not_def_spec  ; 98
+                dq not_def_spec  ; 99
+                dq d_decimal     ; 100
+
+section .text
+
       mov eax, [rbp - 8 - 16]        ; local param <X1> eat from stack mem
 
       push rax
@@ -691,7 +731,7 @@ mov [rbp - 8 - 16], rax    ; init go ta kadr
       pop rsi
       lea rdi, [rel format]
       xor rax, rax
-call M_printf_s
+call A_0_0_0   ; M_printf_s
 
 
  ;_________INIT_X2______________
@@ -770,7 +810,7 @@ mov [rbp - 8 - 24], rax    ; init go ta kadr
       pop rsi
       lea rdi, [rel format]
       xor rax, rax
-call M_printf_s
+call A_0_0_0   ; M_printf_s
 
  jmp else_end_label_2
  label_2:        ; if:
@@ -845,14 +885,14 @@ mov [rbp - 8 - 32], rax    ; init go ta kadr
  ;_________________________________________
 
 
-      mov eax, [rbp - 8 - 16]        ; local param <X1> eat from stack mem
+      mov eax, [rbp - 8 - 32]        ; local param <X1> eat from stack mem
 
       push rax
 
       pop rsi
       lea rdi, [rel format]
       xor rax, rax
-call M_printf_s
+call A_0_0_0   ; M_printf_s
 
  else_end_label_2:
     ;______________
@@ -907,7 +947,7 @@ mov [rbp - 8 - 40], rax    ; init go ta kadr
       pop rsi
       lea rdi, [rel format]
       xor rax, rax
-call M_printf_s
+call A_0_0_0   ; M_printf_s
 
  else_end_label_1:
     ;______________
@@ -992,7 +1032,7 @@ mov [rbp - 8 - 48], rax    ; init go ta kadr
       pop rsi
       lea rdi, [rel format]
       xor rax, rax
-call M_printf_s
+call A_0_0_0   ; M_printf_s
 
  jmp else_end_label_3
  label_3:        ; if:
@@ -1059,7 +1099,7 @@ mov [rbp - 8 - 56], rax    ; init go ta kadr
       pop rsi
       lea rdi, [rel format]
       xor rax, rax
-call M_printf_s
+call A_0_0_0   ; M_printf_s
 
  jmp else_end_label_4
  label_4:        ; if:
@@ -1096,7 +1136,7 @@ mov [rbp - 8 - 64], rax    ; init go ta kadr
       pop rsi
       lea rdi, [rel format]
       xor rax, rax
-call M_printf_s
+call A_0_0_0   ; M_printf_s
 
  else_end_label_4:
     ;______________
@@ -1122,7 +1162,7 @@ syscall
 section .data
 
 two:
-	dd   2
+	dd   0
 
 zero:
 	dd   0
@@ -1135,16 +1175,3 @@ B:
 
 C:
 	dd   0
-
-format db "%d", 10, 0
-what_prntf times 1024 db 0
-                align 8
-            Springboard:
-                dq not_def_spec  ; 98
-                dq not_def_spec  ; 99
-                dq d_decimal     ; 100
-
-
-section .bss
-
-    num resd 1

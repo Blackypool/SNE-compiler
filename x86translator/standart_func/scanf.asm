@@ -8,6 +8,12 @@ jmp skip_init_scan_ff
 
 ;=====================================================
 
+nop
+nop
+nop
+nop
+nop
+
 M_Scanf:
 ;{
     sub rsp, 32                 ; massiva on stack

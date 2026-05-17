@@ -3,8 +3,22 @@
 
 #include "../M_compile.h"
 
+void init_struct_of_include();
+
 
 int asm_main(ar_get);
+
+void epilog_nasm(ar_get, FILE* fp, FILE* bin_f);
+
+void prolog_nasm(ar_get, FILE* fp, FILE* bin_f);
+
+void data_nasm(ar_get, FILE* fp, FILE* bin_f);
+
+void renessans_for_bin(ar_get);
+
+void open_files(ar_get, FILE** fp, FILE** bin_f);
+
+
 
 void Asm_expression(Arg_s);
 

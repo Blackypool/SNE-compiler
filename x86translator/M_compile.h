@@ -9,6 +9,8 @@
 #define NO_ITS_NO 88
 
 
+#define SKIP_JMP_FOR_OFFSET_START 0
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -72,6 +74,10 @@ struct include_func
     int is_use_in_program;
 
     const char* name_of_file;
+
+    const char* name_for_jmp_table;
+
+    int size_of_bin_file;
 };
 
 struct for_bin_w_adr
@@ -160,7 +166,7 @@ struct A_S_T
     char** section_data;                    // для сохранения глобальных переменных в дате а не посередине тиэксти
     int n_omer_real_global_for_data_sec;    // для хранения строк для печати
 
-    int cur_ip;                          // адрес в бинарнике // возможно потом надо учесть в нем эпиграф бинарника
+    int cur_ip;                             // адрес в бинарнике
     for_bin_w_adr* labels_bin_rip;
     size_t free_label_for_bin_rip;
 };
@@ -320,7 +326,7 @@ enum bin_code
     //______JMP______//
     B_CALL = 0xE8,
     B_RET  = 0xC3,
-    B_JMP  = 0xEB,
+    B_JMP  = 0xE9,
 
     B_JE   = 0x84,
     B_JNE  = 0x85,

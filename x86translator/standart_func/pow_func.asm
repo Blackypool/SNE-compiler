@@ -8,6 +8,12 @@ jmp skip_init_POW_FUNC
 
 ;=====================================================
 
+nop
+nop
+nop
+nop
+nop
+
 pow_func:
 ;{
     mov     eax, 1

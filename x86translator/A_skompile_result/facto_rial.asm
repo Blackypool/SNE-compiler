@@ -5,6 +5,13 @@ section .text
 global _start
 _start:
 
+jmp skip_jmp_table
+A_0_0_0:
+   jmp M_printf_s
+A_1_1_1:
+   jmp M_Scanf
+skip_jmp_table:
+
 
 ;_________INIT_two______________
 
@@ -191,6 +198,12 @@ jmp skip_init_scan_ff
 
 ;=====================================================
 
+nop
+nop
+nop
+nop
+nop
+
 M_Scanf:
 ;{
     sub rsp, 32                 ; massiva on stack
@@ -239,7 +252,7 @@ M_Scanf:
 skip_init_scan_ff:
 ;_____________________________________________________
 
-call M_Scanf
+call A_1_1_1   ; M_Scanf
 
       push rax
       pop rax
@@ -272,6 +285,12 @@ call M_Scanf
 
     ;=====================================================
 
+    nop
+    nop
+    nop
+    nop
+    nop
+
     M_printf_s:
     ;{
         ;ret                            ; [BP + 32]
@@ -295,7 +314,8 @@ call M_Scanf
     ; prepare_s
         xor r8, r8                      ; flag for not need use float in dec in start before find float
         lea rdx, [rel what_prntf]       ; DX = start of buff with result // relative(относительная) addressing
-        mov rcx, rax                    ; al = count for float numbers in regs--> cl
+        lea rdi, [rel format]           ; для бинарника надо
+        mov rcx, rax                    ; al = count for float numbers in regs--> cl    // what_prntf
     ;
     while_sl_zero:
 
@@ -425,9 +445,13 @@ call M_Scanf
         cmp rax, 'x'                ; if al > x
         jg not_def_spec
 
-        lea rsi, [rel Springboard]  ; rsi = offset+ip = full adr of jt 
+        sub al, 'b'
 
-        jmp [rsi + 8 * (rax - 'b')] ; jt
+        lea rsi, [rel Springboard]
+        movsxd rax, dword [rsi + rax*8]
+        add rsi, rax
+
+        jmp rsi
 
         not_def_spec:
         ;{
@@ -574,13 +598,24 @@ call M_Scanf
     ;=====================================================
     skip_init_of_M_printf_s:
 ;}
+
+section .data
+format db "%d", 10, 0
+what_prntf times 12 db 0
+                align 8
+            Springboard:
+                dq (not_def_spec - Springboard)  ; 98
+                dq (not_def_spec - Springboard)  ; 99
+                dq (d_decimal - Springboard)     ; 100
+
+section .text
+
       mov eax, [rel samFactor]  ; global param <samFactor> takes from label
       push rax
 
       pop rsi
-      lea rdi, [rel format]
       xor rax, rax
-call M_printf_s
+call A_0_0_0   ; M_printf_s
 
 
 
@@ -593,7 +628,7 @@ syscall
 section .data
 
 two:
-	dd   2
+	dd   0
 
 zero:
 	dd   0
@@ -606,16 +641,3 @@ need:
 
 samFactor:
 	dd   0
-
-format db "%d", 10, 0
-what_prntf times 1024 db 0
-                align 8
-            Springboard:
-                dq not_def_spec  ; 98
-                dq not_def_spec  ; 99
-                dq d_decimal     ; 100
-
-
-section .bss
-
-    num resd 1

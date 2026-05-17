@@ -15,15 +15,29 @@ STACK_FUNC = translator/stack_func/constructor.cpp translator/stack_func/prAvert
 all:
 	g++ $(FLAGS) $(FILE_S) $(READ_TREE) $(STACK_FUNC) translator/M_X86.cpp
 
+# readelf -a facto_rial.bin
+# chmod +x facto_rial.bin
+# ./facto_rial.bin
+
+
 # ./a.out facto_rial
 # ./a.out prime_kvadr
+
 
 # nasm -f elf64 A_skompile_result/facto_rial.asm -o A_skompile_result/facto_rial.o
 # x86_64-elf-ld -o facto_rial A_skompile_result/facto_rial.o
 # docker run -it --platform linux/amd64 -v "$(pwd)":/workspace -w /workspace ubuntu:latest ./facto_rial
 
-
-
 # nasm -f elf64 A_skompile_result/prime_kvadr.asm -o A_skompile_result/prime_kvadr.o
 # x86_64-elf-ld -o prime_kvadr A_skompile_result/prime_kvadr.o
 # docker run -it --platform linux/amd64 -v "$(pwd)":/workspace -w /workspace ubuntu:latest ./prime_kvadr
+
+
+# nasm -f bin pow_func.asm -o pow_func.bin
+# nasm -f bin printf.asm -o printf.bin
+# nasm -f bin scanf.asm -o scanf.bin
+# nasm -f bin sq_rt.asm -o sq_rt.bin
+
+# wc -c < sq_rt.bin
+
+# x/20i $rip-10

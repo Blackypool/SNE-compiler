@@ -78,17 +78,13 @@ void Asm_init_varia(Arg_s)
 
 
         fprintf(fp, "\n   mov [rel %s], eax  ; global param <%s> takes from label", name_of_var, name_of_var);
-        emit_mov_eax_mem_offset_swap_REL(ast, bin_f, RAX, (char*)name_of_var, B_R2M);
+        emit_mov_eax_mem_offset_swap_REL(ast, bin_f, RAX, name_of_var, B_R2M);
 
 
         fprintf(fp, ";_________________________________________\n\n");
 
         //////////FOR_DATA/////////////
-        char name_for_global[128] = {};
-        snprintf(name_for_global, sizeof(name_for_global), "\n%s:\n\tdd   %.0lf\n", name_of_var, val_ue->value.num); 
-
-        ast->section_data[ast->n_omer_real_global_for_data_sec] = strdup(name_for_global);
-        AsserT(ast->section_data[ast->n_omer_real_global_for_data_sec] == NULL, memory_aloca, );
+        ast->section_data[ast->n_omer_real_global_for_data_sec] = strdup(name_of_var);
 
         (ast->n_omer_real_global_for_data_sec)++;
         ///////////////////////////////
@@ -167,11 +163,11 @@ params_in_scope* search_in_scope(ar_get, char* name_var)
     /////////////////////MAIN_SCOPE///////////////////
     for(ssize_t i = ast->skope_stack->size - 1; i >= 0 ; i--)
     {
-        for(size_t k = 0;       (k < ast->skope_stack->stack[i]->num_params) && \
-                                (ast->skope_stack->stack[i]->all_param_s[k].name_of_var != NULL);     k++)
+        for(ssize_t k = (ssize_t)ast->skope_stack->stack[i]->num_params - 1; k >= 0;     k--)
         {
-            if(strcmp(name_var, ast->skope_stack->stack[i]->all_param_s[k].name_of_var) == 0)
-                return &(ast->skope_stack->stack[i]->all_param_s[k]);
+            if(ast->skope_stack->stack[i]->all_param_s[k].name_of_var != NULL)
+                if(strcmp(name_var, ast->skope_stack->stack[i]->all_param_s[k].name_of_var) == 0)
+                    return &(ast->skope_stack->stack[i]->all_param_s[k]);
         }
     }
     //////////////////////////////////////////////////
@@ -297,10 +293,12 @@ void user_oper_init(Arg_s)
 
 
     ////////////////INFO////////////////
-    char* name_ = (char*)name_of_func->value.us_op;
+    const char* name_ = name_of_func->value.us_op;
 
-    fprintf(fp, "\n\njmp %s_skip_init\n", name_); 
-    emit_jmp_call(ast, bin_f, name_, B_JMP);
+    char skip_lll[128] = {};
+    snprintf(skip_lll, sizeof(skip_lll), "%s_skip_init", name_);
+    fprintf(fp, "\n\njmp %s\n", skip_lll);
+    emit_jmp_call(ast, bin_f, skip_lll, B_JMP);
 
     fprintf(fp, "\n;===============%s===============cdecle=======\
                 \n\
@@ -341,13 +339,12 @@ void user_oper_init(Arg_s)
 
     ///////////////BODY/////////////////
     Asm_expression(fp, body, ast, bin_f);
-    // pop rbp + ret
     ////////////////////////////////////
 
 
     ////////////////END/////////////////
-    fprintf(fp, "\n;}\n%s_skip_init:\n\n;_____________________________________________________\n\n", name_); 
-    emit_func_init(ast, name_);
+    fprintf(fp, "\n;}\n%s:\n\n;_____________________________________________________\n\n", skip_lll);
+    emit_func_init(ast, skip_lll);
     
     stack_pop(ast->skope_stack);
     ////////////////////////////////////
