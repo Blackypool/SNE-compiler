@@ -1,16 +1,6 @@
 #include "AST_to_asm.h"
 
 
-// ошибка плоского стека вместе с ифом == в елсе нельзя такое же название что и в ифе
-// пустить поиск в обратную сторону 
-
-// in imul r == l and l == r
-
-
-// метка формат будет неопределена!!! в леа принтфа 
-
-
-
 //_____________________________________________________START______________________________________________________________________________//
 int first_zapusk = 0;
 
@@ -20,6 +10,7 @@ static struct include_func include[] = {
     {"A_1_1_1",   SCAN_C,     NO_ITS_NO,  "standart_func/scanf"   , "M_Scanf"   , 89},
     {"A_2_2_2",   SQRT_C,     NO_ITS_NO,  "standart_func/sq_rt"   , "sq_rt"     , 16},
     {"A_3_3_3",   POW_C,      NO_ITS_NO,  "standart_func/pow_func", "pow_func"  , 21},
+    {"A_4_4_4",   DRAW_C,     NO_ITS_NO,  "standart_func/draw_y"  , "draw_y"    , 25},
 
 };
 
@@ -117,7 +108,7 @@ void prolog_nasm(ar_get, FILE* fp, FILE* bin_f)
         if(include[i].is_use_in_program == YES_IT_IS)
             need_add_size = need_add_size + include[i].size_of_bin_file;
 
-    // elf_generator(ast, bin_f, need_add_size);
+    elf_generator(ast, bin_f, need_add_size);
     ast->cur_ip = 0; // чтобы он сохранился при создании эльфа
 
     fprintf(fp, "bits 64\n");
@@ -278,6 +269,26 @@ void operat_ptinting(Arg_s)
     }
     const char* default_com = translet_to_ASM[index_in_translet].value;
     
+    if(strcmp(default_com, "sub") == 0)
+    {
+        if(leaf->right == NULL)     // унарный минус
+        {
+            Asm_expression(fp, leaf->left, ast, bin_f);
+            fprintf(fp, "      pop rax\n");
+            emit_pop_reg(ast, bin_f, RAX);
+
+            fprintf(fp, "      mov rcx, 0\n");
+            emit_mov_rax_num(ast, bin_f, RCX, 0);
+
+            fprintf(fp, "      sub rcx, rax\n");
+            emit_calculate(ast, bin_f, B_SUB_R, RCX, RAX);
+
+            fprintf(fp, "      push rcx\n\n");
+            emit_push_reg(ast, bin_f, RCX);
+
+            return ;
+        }
+    }
 
     // default func use:
     Asm_expression(fp, leaf->left, ast, bin_f);
@@ -424,6 +435,19 @@ void _include_func_(Arg_s, int include_com)
 
             fprintf(fp, "\n      push rax\n");
             emit_push_reg(ast, bin_f, RAX);
+        }
+        break;
+
+        case DRAW_C:
+        {
+            Asm_expression(fp, leaf->left, ast, bin_f);
+
+            fprintf(fp, "\n      pop rdi");
+            emit_pop_reg(ast, bin_f, RDI);
+
+
+            fprintf(fp, "\ncall %s   ; %s\n", include[include_com].value, include[include_com].name_for_jmp_table);
+            emit_jmp_call(ast, bin_f, include[include_com].value, B_CALL);
         }
         break;
     

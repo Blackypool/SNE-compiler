@@ -225,7 +225,8 @@ sub rsp, 72
    pop rcx
    pop rax
 
-   cmp rax, rcx
+   cmp eax, ecx
+
    je    label_0
  ;____________________
  ; else:
@@ -262,7 +263,8 @@ mov [rbp - 8 - 0], rax    ; init go ta kadr
    pop rcx
    pop rax
 
-   cmp rax, rcx
+   cmp eax, ecx
+
    jl    label_1
  ;____________________
  ; else:
@@ -319,7 +321,8 @@ mov [rbp - 8 - 8], rax    ; init go ta kadr
    pop rcx
    pop rax
 
-   cmp rax, rcx
+   cmp eax, ecx
+
    je    label_2
  ;____________________
  ; else:
@@ -392,6 +395,9 @@ pop rax
 mov [rbp - 8 - 16], rax    ; init go ta kadr
  ;_________________________________________
 
+; bits 64
+; section .text
+
 ;__________INIT_BIG_PRINTF__________
 ;{    
     jmp skip_init_of_M_printf_s
@@ -433,6 +439,7 @@ mov [rbp - 8 - 16], rax    ; init go ta kadr
     ; prepare_s
         xor r8, r8                      ; flag for not need use float in dec in start before find float
         lea rdx, [rel what_prntf]       ; DX = start of buff with result // relative(относительная) addressing
+        lea rdi, [rel format]           ; для бинарника надо
         mov rcx, rax                    ; al = count for float numbers in regs--> cl    // what_prntf
     ;
     while_sl_zero:
@@ -480,7 +487,7 @@ mov [rbp - 8 - 16], rax    ; init go ta kadr
                 jg stack_params                 ; >
 
                 ; regs params need
-                mov r9, [rbp - 104 + r13]
+                movsxd r9, dword[rbp - 104 + r13]
                 add r13, 8
 
                 jmp next_step_jt
@@ -563,9 +570,13 @@ mov [rbp - 8 - 16], rax    ; init go ta kadr
         cmp rax, 'x'                ; if al > x
         jg not_def_spec
 
-        lea rsi, [rel Springboard]  ; rsi = offset+ip = full adr of jt 
+        sub al, 'b'
 
-        jmp [rsi + 8 * (rax - 'b')] ; jt
+        lea rsi, [rel Springboard]
+        movsxd rax, dword [rsi + rax*8]
+        add rsi, rax
+
+        jmp rsi
 
         not_def_spec:
         ;{
@@ -609,7 +620,7 @@ mov [rbp - 8 - 16], rax    ; init go ta kadr
         push r9
         ;check -numbers
         ;{
-            test r9, r9
+            test r9d, r9d
             jns plus_number         ; jump if not sign <=> jmp if r9 > 0
             
             mov byte [rdx], '-'
@@ -620,7 +631,8 @@ mov [rbp - 8 - 16], rax    ; init go ta kadr
 
             skip_draw_minus:
             pop r9
-            neg r9
+            neg r9d
+            movsxd r9, r9d
             jmp next_step_of_dec
         ;}
         plus_number:
@@ -718,9 +730,9 @@ format db "%d", 10, 0
 what_prntf times 12 db 0
                 align 8
             Springboard:
-                dq not_def_spec  ; 98
-                dq not_def_spec  ; 99
-                dq d_decimal     ; 100
+                dq (not_def_spec - Springboard)  ; 98
+                dq (not_def_spec - Springboard)  ; 99
+                dq (d_decimal - Springboard)     ; 100
 
 section .text
 
@@ -729,7 +741,6 @@ section .text
       push rax
 
       pop rsi
-      lea rdi, [rel format]
       xor rax, rax
 call A_0_0_0   ; M_printf_s
 
@@ -808,7 +819,6 @@ mov [rbp - 8 - 24], rax    ; init go ta kadr
       push rax
 
       pop rsi
-      lea rdi, [rel format]
       xor rax, rax
 call A_0_0_0   ; M_printf_s
 
@@ -890,7 +900,6 @@ mov [rbp - 8 - 32], rax    ; init go ta kadr
       push rax
 
       pop rsi
-      lea rdi, [rel format]
       xor rax, rax
 call A_0_0_0   ; M_printf_s
 
@@ -945,7 +954,6 @@ mov [rbp - 8 - 40], rax    ; init go ta kadr
       push rax
 
       pop rsi
-      lea rdi, [rel format]
       xor rax, rax
 call A_0_0_0   ; M_printf_s
 
@@ -966,7 +974,8 @@ call A_0_0_0   ; M_printf_s
    pop rcx
    pop rax
 
-   cmp rax, rcx
+   cmp eax, ecx
+
    je    label_3
  ;____________________
  ; else:
@@ -1030,7 +1039,6 @@ mov [rbp - 8 - 48], rax    ; init go ta kadr
       push rax
 
       pop rsi
-      lea rdi, [rel format]
       xor rax, rax
 call A_0_0_0   ; M_printf_s
 
@@ -1048,7 +1056,8 @@ call A_0_0_0   ; M_printf_s
    pop rcx
    pop rax
 
-   cmp rax, rcx
+   cmp eax, ecx
+
    je    label_4
  ;____________________
  ; else:
@@ -1097,7 +1106,6 @@ mov [rbp - 8 - 56], rax    ; init go ta kadr
       push rax
 
       pop rsi
-      lea rdi, [rel format]
       xor rax, rax
 call A_0_0_0   ; M_printf_s
 
@@ -1134,7 +1142,6 @@ mov [rbp - 8 - 64], rax    ; init go ta kadr
       push rax
 
       pop rsi
-      lea rdi, [rel format]
       xor rax, rax
 call A_0_0_0   ; M_printf_s
 

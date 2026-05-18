@@ -1,3 +1,204 @@
+bits 64
+section .text
+
+
+global _start
+_start:
+
+jmp skip_jmp_table
+A_0_0_0:
+   jmp M_printf_s
+A_1_1_1:
+   jmp M_Scanf
+skip_jmp_table:
+
+
+
+jmp fibonachi_skip_init
+
+;===============fibonachi===============cdecle=======                
+                
+;   Entry:      (1) param                
+;   Exit:       ret in stack                
+;   Expected:   nothing                
+;   Destr:      ax, may be cx                
+                
+;=====================================================
+
+fibonachi:
+;{
+   push rbp
+   mov rbp, rsp
+
+sub rsp, 0
+
+ ;________CMP_________
+      mov eax, [rbp + 8 + 8]        ; take [1] param = <n> for func from stack
+      push rax                       ; var printing
+
+      mov rax, 1      ; push number
+      push rax
+
+
+   pop rcx
+   pop rax
+
+   cmp eax, ecx
+
+   jle    label_0
+ ;____________________
+ jmp else_end_label_0
+ label_0:        ; if:
+
+
+      mov eax, [rbp + 8 + 8]        ; take [1] param = <n> for func from stack
+      push rax                       ; var printing
+
+   pop rax
+
+   mov rsp, rbp
+   pop rbp
+
+    ret
+ else_end_label_0:
+    ;______________
+
+
+ ;_______FUNC_USE_____
+      mov eax, [rbp + 8 + 8]        ; take [1] param = <n> for func from stack
+      push rax                       ; var printing
+
+      mov rax, 1      ; push number
+      push rax
+
+      pop rcx
+      pop rax
+      sub eax, ecx
+      push rax
+   call fibonachi
+   add rsp, 8        ; skip push params 
+   push rax            ; вернули ret in stack
+ ;____________________
+
+ ;_______FUNC_USE_____
+      mov eax, [rbp + 8 + 8]        ; take [1] param = <n> for func from stack
+      push rax                       ; var printing
+
+      mov rax, 2      ; push number
+      push rax
+
+      pop rcx
+      pop rax
+      sub eax, ecx
+      push rax
+   call fibonachi
+   add rsp, 8        ; skip push params 
+   push rax            ; вернули ret in stack
+ ;____________________
+      pop rcx
+      pop rax
+      add eax, ecx
+      push rax
+
+   pop rax
+
+   mov rsp, rbp
+   pop rbp
+
+    ret
+
+;}
+fibonachi_skip_init:
+
+;_____________________________________________________
+
+
+;_________INIT_num______________
+jmp skip_init_scan_ff
+;===============SCAN_F==============nothing==========
+
+;   Entry:      nothing
+;   Exit:       aligned stack + scanf num in ax
+;   Expected:   nothing
+;   Destr:      ax, di, si, dx, cx, bx
+
+;=====================================================
+
+nop
+nop
+nop
+nop
+nop
+
+M_Scanf:
+;{
+    sub rsp, 32                 ; massiva on stack
+    
+    mov rax, 0
+    mov rdi, 0
+    mov rsi, rsp
+    mov rdx, 32
+    syscall
+    
+    xor rdx, rdx
+    xor rax, rax                ; res
+    xor rcx, rcx                ; num in massiva
+    mov rbx, 1                  ; sign
+    
+    cmp byte [rsp], '-'
+    jne positive_sc
+    mov rbx, -1
+    inc rcx
+
+ positive_sc:
+ ;{
+    mov dl, byte [rsp + rcx]
+
+    cmp dl, '0'
+    jl return_0_from_scanf
+
+    cmp dl, '9'
+    jg return_0_from_scanf
+
+    sub dl, '0'
+    imul eax, 10
+    add eax, edx
+    
+    inc ecx
+    jmp positive_sc
+ ;}
+
+ return_0_from_scanf:
+
+    imul eax, ebx               ; up sign
+    add rsp, 32                 ; free(stack)
+
+    ret
+;}
+skip_init_scan_ff:
+;_____________________________________________________
+
+call A_1_1_1   ; M_Scanf
+
+      push rax
+      pop rax
+
+   mov [rel num], eax  ; global param <num> takes from label;_________________________________________
+
+
+;_________INIT_fib______________
+
+ ;_______FUNC_USE_____
+      mov eax, [rel num]  ; global param <num> takes from label
+      push rax
+   call fibonachi
+   add rsp, 8        ; skip push params 
+   push rax            ; вернули ret in stack
+ ;____________________
+      pop rax
+
+   mov [rel fib], eax  ; global param <fib> takes from label;_________________________________________
+
 ; bits 64
 ; section .text
 
@@ -338,3 +539,26 @@ what_prntf times 12 db 0
                 dq (d_decimal - Springboard)     ; 100
 
 section .text
+
+      mov eax, [rel fib]  ; global param <fib> takes from label
+      push rax
+
+      pop rsi
+      xor rax, rax
+call A_0_0_0   ; M_printf_s
+
+
+
+; _______________________
+;return 0;
+mov rax, 60
+mov rdi, 0
+syscall
+
+section .data
+
+num:
+	dd   0
+
+fib:
+	dd   0

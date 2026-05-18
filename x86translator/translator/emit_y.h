@@ -59,6 +59,8 @@ int search_name_of_label(ar_get, const char* name_of_label);
 
 void emit_cmp_rax_rax(ar_get, FILE* bin_f, int reg_left, int reg_right);
 
+void emit_cmp_eax_eax(ar_get, FILE* bin_f, int reg_left, int reg_right);
+
 void emit_jmp_call(ar_get, FILE* bin_f, const char* name_of_label, int type_of_jmp);
 
 void emit_logical_jmp(ar_get, FILE* bin_f, char* name_of_label, int type_of_jmp);

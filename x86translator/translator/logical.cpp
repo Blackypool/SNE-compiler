@@ -27,14 +27,14 @@ void bear_gammy_jump_func(Arg_s)
     fprintf(fp, "\n   pop rcx");
     fprintf(fp, "\n   pop rax\n\n");
 
-    fprintf(fp, "   cmp rax, rcx\n");
+
+    fprintf(fp, "   cmp eax, ecx\n");
 
 
     emit_pop_reg(ast, bin_f, RCX);
     emit_pop_reg(ast, bin_f, RAX);
 
-    emit_cmp_rax_rax(ast, bin_f, RAX, RCX);
-
+    emit_cmp_eax_eax(ast, bin_f, RAX, RCX);
 
     ////////////////////////////////////
 
@@ -48,7 +48,7 @@ void bear_gammy_jump_func(Arg_s)
     for(size_t i = 0; i < size_of_JT_table; ++i)
         if(leaf->value.oper == (size_t)jumpers[i].e_num)
         {
-            fprintf(fp, "%s    %s\n", jumpers[i].value, label_name);
+            fprintf(fp, "\n%s    %s\n", jumpers[i].value, label_name);
             emit_logical_jmp(ast, bin_f, label_name, jumpers[i].bin_code);
         }
 
@@ -131,12 +131,16 @@ void Asm_while_cmd(Arg_s)
     char* name_forr_while = preparation_if_while(arg_s);  
     AsserT(name_forr_while == NULL, error_in_deep, );    
 
-
-    ///////////////////START//////////////////////
+    ///////////////////////////////////////////////
     char start_of_while_[128] = {};
     snprintf(start_of_while_, sizeof(start_of_while_), "start_of_while_%s", name_forr_while);
-    fprintf(fp, " %s:\n", start_of_while_);
 
+    char end_of_while_[128] = {};
+    snprintf(end_of_while_, sizeof(end_of_while_), "end_of_while_%s", name_forr_while);
+    ///////////////////////////////////////////////
+
+    ///////////////////START//////////////////////
+    fprintf(fp, " %s:\n", start_of_while_);
     emit_func_init(ast, start_of_while_);
     ///////////////////////////////////////////////
 
@@ -145,18 +149,23 @@ void Asm_while_cmd(Arg_s)
     Asm_expression(fp, root_of_while->left, ast, bin_f);
     ///////////////////////////////////////////////
 
+    fprintf(fp, "\njmp %s\n", end_of_while_);    // если лэйбел в кондишион не сработал
+    emit_jmp_call(ast, bin_f, end_of_while_, B_JMP);
+
+    fprintf(fp, " %s:\n", name_forr_while);      // сюда из кондишиона
+    emit_func_init(ast, name_forr_while);
 
     /////////////////////BODY//////////////////////
     Asm_expression(fp, root_of_while->right, ast, bin_f);
-    fprintf(fp, " jmp %s", start_of_while_);
 
+    fprintf(fp, "\n jmp %s\n", start_of_while_);
     emit_jmp_call(ast, bin_f, start_of_while_, B_JMP);
     ///////////////////////////////////////////////
 
 
     /////////////////////END//////////////////////
-    fprintf(fp, " %s:\n", name_forr_while);
-    emit_func_init(ast, name_forr_while);
+    fprintf(fp, " %s:\n", end_of_while_);
+    emit_func_init(ast, end_of_while_);
     ///////////////////////////////////////////////
 
 

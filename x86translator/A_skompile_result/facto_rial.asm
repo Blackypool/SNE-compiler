@@ -79,7 +79,8 @@ sub rsp, 8
    pop rcx
    pop rax
 
-   cmp rax, rcx
+   cmp eax, ecx
+
    jg    label_0
  ;____________________
  jmp else_end_label_0
@@ -144,7 +145,8 @@ mov [rbp - 8 - 0], rax    ; init go ta kadr
    pop rcx
    pop rax
 
-   cmp rax, rcx
+   cmp eax, ecx
+
    jl    label_1
  ;____________________
  jmp else_end_label_1
@@ -273,6 +275,9 @@ call A_1_1_1   ; M_Scanf
 
    mov [rel samFactor], eax  ; global param <samFactor> takes from label;_________________________________________
 
+; bits 64
+; section .text
+
 ;__________INIT_BIG_PRINTF__________
 ;{    
     jmp skip_init_of_M_printf_s
@@ -362,7 +367,7 @@ call A_1_1_1   ; M_Scanf
                 jg stack_params                 ; >
 
                 ; regs params need
-                mov r9, [rbp - 104 + r13]
+                movsxd r9, dword[rbp - 104 + r13]
                 add r13, 8
 
                 jmp next_step_jt
@@ -495,7 +500,7 @@ call A_1_1_1   ; M_Scanf
         push r9
         ;check -numbers
         ;{
-            test r9, r9
+            test r9d, r9d
             jns plus_number         ; jump if not sign <=> jmp if r9 > 0
             
             mov byte [rdx], '-'
@@ -506,7 +511,8 @@ call A_1_1_1   ; M_Scanf
 
             skip_draw_minus:
             pop r9
-            neg r9
+            neg r9d
+            movsxd r9, r9d
             jmp next_step_of_dec
         ;}
         plus_number:
@@ -600,7 +606,7 @@ call A_1_1_1   ; M_Scanf
 ;}
 
 section .data
-format db "%d", 10, 0
+format db "%d", 0
 what_prntf times 12 db 0
                 align 8
             Springboard:

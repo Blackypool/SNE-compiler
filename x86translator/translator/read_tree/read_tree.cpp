@@ -241,6 +241,7 @@ struct znaki com_transl[] = {
     {"cnct", CONNEC_T},
     {"in", SCAN_C},
     {"sqrt", SQRT_C},
+    {"draw", DRAW_C},
 
     {"unluck", -1},
 

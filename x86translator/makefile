@@ -13,15 +13,25 @@ READ_TREE = translator/read_tree/dump_gr.cpp translator/read_tree/read_tree.cpp
 STACK_FUNC = translator/stack_func/constructor.cpp translator/stack_func/prAverti.cpp translator/stack_func/push_pop.cpp
 
 all:
-	g++ $(FLAGS) $(FILE_S) $(READ_TREE) $(STACK_FUNC) translator/M_X86.cpp
-
+	g++ $(FLAGS) $(FILE_S) $(READ_TREE) $(STACK_FUNC) translator/M_X86.cpp translator/ELF_generator.cpp
+# translator/ELF_generator.cpp
 # readelf -a facto_rial.bin
+
 # chmod +x facto_rial.bin
+# chmod +x prime_kvadr.bin
+# chmod +x cir_cle.bin
+# chmod +x fibo_nachi.bin
+
 # ./facto_rial.bin
+# ./prime_kvadr.bin
+# ./cir_cle.bin
+# ./fibo_nachi.bin
 
 
 # ./a.out facto_rial
 # ./a.out prime_kvadr
+# ./a.out cir_cle
+# ./a.out fibo_nachi
 
 
 # nasm -f elf64 A_skompile_result/facto_rial.asm -o A_skompile_result/facto_rial.o
@@ -32,11 +42,20 @@ all:
 # x86_64-elf-ld -o prime_kvadr A_skompile_result/prime_kvadr.o
 # docker run -it --platform linux/amd64 -v "$(pwd)":/workspace -w /workspace ubuntu:latest ./prime_kvadr
 
+# nasm -f elf64 A_skompile_result/cir_cle.asm -o A_skompile_result/cir_cle.o
+# x86_64-elf-ld -o cir_cle A_skompile_result/cir_cle.o
+# docker run -it --platform linux/amd64 -v "$(pwd)":/workspace -w /workspace ubuntu:latest ./cir_cle
+
+# nasm -f elf64 A_skompile_result/fibo_nachi.asm -o A_skompile_result/fibo_nachi.o
+# x86_64-elf-ld -o fibo_nachi A_skompile_result/fibo_nachi.o
+# docker run -it --platform linux/amd64 -v "$(pwd)":/workspace -w /workspace ubuntu:latest ./fibo_nachi
+
 
 # nasm -f bin pow_func.asm -o pow_func.bin
 # nasm -f bin printf.asm -o printf.bin
 # nasm -f bin scanf.asm -o scanf.bin
-# nasm -f bin sq_rt.asm -o sq_rt.bin
+# nasm -f bin sq_rt.asm -o sq_rt.bin 
+# nasm -f bin draw_y.asm -o draw_y.bin
 
 # wc -c < sq_rt.bin
 

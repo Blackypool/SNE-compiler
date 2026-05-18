@@ -5,8 +5,29 @@
 
 
 //////////////FACT//////////////
-// 0x174 = scanf / i = 1        ./patcher facto_rial.bin 1 0x174
-// 0x21A = printf / i = 0       ./patcher facto_rial.bin 0 0x21A
+// scanf  / i = 1       ./patcher facto_rial.bin 1 0x177
+// printf / i = 0       ./patcher facto_rial.bin 0 0x21D
+////////////////////////////////
+
+
+//////////////KVADR/////////////
+// scanf  / i = 1       ./patcher prime_kvadr.bin 1 0x111
+// printf / i = 0       ./patcher prime_kvadr.bin 0 0x51F
+// sqrt   / i = 2       ./patcher prime_kvadr.bin 2 0x1EE
+////////////////////////////////
+
+
+
+//////////////FIBA//////////////
+// scanf  / i = 1       ./patcher fibo_nachi.bin 1 0x110
+// printf / i = 0       ./patcher fibo_nachi.bin 0 0x1B6
+////////////////////////////////
+
+
+
+//////////////KRUG//////////////
+// scanf  / i = 1       ./patcher cir_cle.bin 1 0x215
+// draw   / i = 4       ./patcher cir_cle.bin 4 0x145
 ////////////////////////////////
 
 

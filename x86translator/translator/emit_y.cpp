@@ -211,6 +211,17 @@ void emit_cmp_rax_rax(ar_get, FILE* bin_f, int reg_left, int reg_right)
 }
 
 
+void emit_cmp_eax_eax(ar_get, FILE* bin_f, int reg_left, int reg_right)
+{
+    emit_byte(ast, bin_f, (unsigned char)(B_CMP_R));
+
+    unsigned char glue = (unsigned char)(B_WORK_RR | (reg_right << 3) | reg_left);
+    emit_byte(ast, bin_f, (glue));
+
+    fprintf(stderr, "cmp %s, %s     ; rip = %d\n", translate_regs_en(reg_left), translate_regs_en(reg_right),  ast->cur_ip);
+}
+
+
 void emit_jmp_call(ar_get, FILE* bin_f, const char* name_of_label, int type_of_jmp)
 {
     int offset = search_name_of_label(ast, name_of_label) - (ast->cur_ip + 5);
