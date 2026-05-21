@@ -1,7 +1,7 @@
 #ifndef EMIT_S_TO_BIN_H
 #define EMIT_S_TO_BIN_H
 
-#include "../M_compile.h"
+#include "../../M_compile.h"
 
 #define STANDART_ADR 0x400000
 #define PAGE_SIZE 4096

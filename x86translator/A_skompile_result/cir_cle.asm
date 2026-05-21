@@ -14,9 +14,9 @@ skip_jmp_table:
 
 
 
-jmp draw_circle_skip_init
+jmp draw_circle__skip_init
 
-;===============draw_circle===============cdecle=======                
+;===============draw_circle_===============cdecle=======                
                 
 ;   Entry:      (1) param                
 ;   Exit:       ret in stack                
@@ -25,14 +25,14 @@ jmp draw_circle_skip_init
                 
 ;=====================================================
 
-draw_circle:
+draw_circle_:
 ;{
    push rbp
    mov rbp, rsp
 
 sub rsp, 48
 
- ;_________INIT_x_max______________
+ ;_________INIT_xmax______________
 
       mov eax, [rbp + 8 + 8]        ; take [1] param = <radius> for func from stack
       push rax                       ; var printing
@@ -42,9 +42,9 @@ mov [rbp - 8 - 0], rax    ; init go ta kadr
  ;_________________________________________
 
 
- ;_________INIT_y_max______________
+ ;_________INIT_ymax______________
 
-      mov eax, [rbp - 8 - 0]        ; local param <x_max> eat from stack mem
+      mov eax, [rbp - 8 - 0]        ; local param <xmax> eat from stack mem
 
       push rax
 
@@ -55,13 +55,16 @@ mov [rbp - 8 - 8], rax    ; init go ta kadr
 
  ;_________INIT_x______________
 
+      mov rax, 0      ; push number
+      push rax
+
+
       mov eax, [rbp + 8 + 8]        ; take [1] param = <radius> for func from stack
       push rax                       ; var printing
+      pop rcx
       pop rax
-      mov rcx, 0
-      sub rcx, rax
-      push rcx
-
+      sub eax, ecx
+      push rax
 
 pop rax
 mov [rbp - 8 - 16], rax    ; init go ta kadr
@@ -70,13 +73,16 @@ mov [rbp - 8 - 16], rax    ; init go ta kadr
 
  ;_________INIT_y______________
 
+      mov rax, 0      ; push number
+      push rax
+
+
       mov eax, [rbp + 8 + 8]        ; take [1] param = <radius> for func from stack
       push rax                       ; var printing
+      pop rcx
       pop rax
-      mov rcx, 0
-      sub rcx, rax
-      push rcx
-
+      sub eax, ecx
+      push rax
 
 pop rax
 mov [rbp - 8 - 24], rax    ; init go ta kadr
@@ -106,7 +112,7 @@ mov [rbp - 8 - 32], rax    ; init go ta kadr
 
       push rax
 
-      mov eax, [rbp - 8 - 8]        ; local param <y_max> eat from stack mem
+      mov eax, [rbp - 8 - 8]        ; local param <ymax> eat from stack mem
 
       push rax
 
@@ -127,7 +133,7 @@ jmp end_of_while_label_0
 
       push rax
 
-      mov eax, [rbp - 8 - 0]        ; local param <x_max> eat from stack mem
+      mov eax, [rbp - 8 - 0]        ; local param <xmax> eat from stack mem
 
       push rax
 
@@ -191,7 +197,7 @@ jmp skip_init_draw_y_func
     nop
     nop
     nop
-
+    
 draw_y:
 ;{
     push rdi
@@ -286,13 +292,16 @@ call A_4_4_4   ; draw_y
       pop rdi
 call A_4_4_4   ; draw_y
 
+      mov rax, 0      ; push number
+      push rax
+
+
       mov eax, [rbp + 8 + 8]        ; take [1] param = <radius> for func from stack
       push rax                       ; var printing
+      pop rcx
       pop rax
-      mov rcx, 0
-      sub rcx, rax
-      push rcx
-
+      sub eax, ecx
+      push rax
       pop rax
 
       mov [rbp - 8 - 16], eax        ; local param <x> eat from stack mem
@@ -329,7 +338,7 @@ call A_4_4_4   ; draw_y
     ret
 
 ;}
-draw_circle_skip_init:
+draw_circle__skip_init:
 
 ;_____________________________________________________
 
@@ -410,7 +419,7 @@ call A_1_1_1   ; M_Scanf
  ;_______FUNC_USE_____
       mov eax, [rel rad]  ; global param <rad> takes from label
       push rax
-   call draw_circle
+   call draw_circle_
    add rsp, 8        ; skip push params 
    push rax            ; вернули ret in stack
  ;____________________

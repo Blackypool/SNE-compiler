@@ -8,13 +8,14 @@ FLAGS = -D _DEBUG -ggdb3 -std=c++17 -Wall -Wextra -Weffc++ -Wc++14-compat -Wmiss
 		-fstrict-overflow -fno-omit-frame-pointer -Wlarger-than=8192 -fPIE -Werror=vla \
 		-fsanitize=address,alignment,bool,bounds,enum,float-cast-overflow,float-divide-by-zero,integer-divide-by-zero,nonnull-attribute,null,return,returns-nonnull-attribute,shift,signed-integer-overflow,undefined,unreachable,vla-bound,vptr
 
-FILE_S = translator/do_and_crash.cpp translator/AST_to_asm.cpp translator/logical.cpp translator/user_insert.cpp translator/emit_y.cpp
+FILE_S = translator/do_and_crash.cpp translator/AST_to_asm.cpp translator/logical.cpp translator/user_insert.cpp
 READ_TREE = translator/read_tree/dump_gr.cpp translator/read_tree/read_tree.cpp
 STACK_FUNC = translator/stack_func/constructor.cpp translator/stack_func/prAverti.cpp translator/stack_func/push_pop.cpp
+FOR_BIN = translator/for_bin_/emit_y.cpp translator/for_bin_/auto_patch.cpp # translator/for_bin_/ELF_generator.cpp
 
 all:
-	g++ $(FLAGS) $(FILE_S) $(READ_TREE) $(STACK_FUNC) translator/M_X86.cpp translator/ELF_generator.cpp
-# translator/ELF_generator.cpp
+	g++ $(FLAGS) $(FILE_S) $(READ_TREE) $(STACK_FUNC) $(FOR_BIN) translator/M_X86.cpp
+# translator/for_bin_/ELF_generator.cpp
 # readelf -a facto_rial.bin
 
 # chmod +x facto_rial.bin

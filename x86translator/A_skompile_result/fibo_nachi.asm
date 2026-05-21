@@ -14,9 +14,9 @@ skip_jmp_table:
 
 
 
-jmp fibonachi_skip_init
+jmp bedwars__skip_init
 
-;===============fibonachi===============cdecle=======                
+;===============bedwars_===============cdecle=======                
                 
 ;   Entry:      (1) param                
 ;   Exit:       ret in stack                
@@ -25,12 +25,12 @@ jmp fibonachi_skip_init
                 
 ;=====================================================
 
-fibonachi:
+bedwars_:
 ;{
    push rbp
    mov rbp, rsp
 
-sub rsp, 0
+ sub rsp, 0
 
  ;________CMP_________
       mov eax, [rbp + 8 + 8]        ; take [1] param = <n> for func from stack
@@ -75,7 +75,7 @@ sub rsp, 0
       pop rax
       sub eax, ecx
       push rax
-   call fibonachi
+   call bedwars_
    add rsp, 8        ; skip push params 
    push rax            ; вернули ret in stack
  ;____________________
@@ -91,7 +91,7 @@ sub rsp, 0
       pop rax
       sub eax, ecx
       push rax
-   call fibonachi
+   call bedwars_
    add rsp, 8        ; skip push params 
    push rax            ; вернули ret in stack
  ;____________________
@@ -108,7 +108,7 @@ sub rsp, 0
     ret
 
 ;}
-fibonachi_skip_init:
+bedwars__skip_init:
 
 ;_____________________________________________________
 
@@ -186,18 +186,18 @@ call A_1_1_1   ; M_Scanf
    mov [rel num], eax  ; global param <num> takes from label;_________________________________________
 
 
-;_________INIT_fib______________
+;_________INIT_criper______________
 
  ;_______FUNC_USE_____
       mov eax, [rel num]  ; global param <num> takes from label
       push rax
-   call fibonachi
+   call bedwars_
    add rsp, 8        ; skip push params 
    push rax            ; вернули ret in stack
  ;____________________
       pop rax
 
-   mov [rel fib], eax  ; global param <fib> takes from label;_________________________________________
+   mov [rel criper], eax  ; global param <criper> takes from label;_________________________________________
 
 ; bits 64
 ; section .text
@@ -530,7 +530,7 @@ call A_1_1_1   ; M_Scanf
 ;}
 
 section .data
-format db "%d", 10, 0
+format db "%d", 0
 what_prntf times 12 db 0
                 align 8
             Springboard:
@@ -540,7 +540,15 @@ what_prntf times 12 db 0
 
 section .text
 
-      mov eax, [rel fib]  ; global param <fib> takes from label
+      mov rax, 100      ; push number
+      push rax
+
+
+      mov eax, [rel criper]  ; global param <criper> takes from label
+      push rax
+      pop rcx
+      pop rax
+      imul eax, ecx
       push rax
 
       pop rsi
@@ -560,5 +568,5 @@ section .data
 num:
 	dd   0
 
-fib:
+criper:
 	dd   0

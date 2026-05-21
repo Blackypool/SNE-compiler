@@ -726,7 +726,7 @@ mov [rbp - 8 - 16], rax    ; init go ta kadr
 ;}
 
 section .data
-format db "%d", 10, 0
+format db "%d", 0
 what_prntf times 12 db 0
                 align 8
             Springboard:

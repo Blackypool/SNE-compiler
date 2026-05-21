@@ -77,6 +77,11 @@ int asm_main(ar_get)
 
         renessans_for_bin(&ast_reserve);
     }
+    else    // уже вторая проходка была => патчим
+    {
+        auto_patcher_bin(ast->end_file_name);
+        chmod_bin_file(ast->end_file_name);
+    }
     ///////////////////////////////////////////////
 
 
@@ -128,7 +133,7 @@ void prolog_nasm(ar_get, FILE* fp, FILE* bin_f)
 
         //////////////  add later in patcher
         emit_byte(ast, bin_f, B_JMP);
-        emit_4_byte(ast, bin_f, 0x52 + (int)i);
+        emit_4_byte(ast, bin_f, CONST_FOR_JT + (int)i);
         //////////////
 
         if(include[i].is_use_in_program == YES_IT_IS)   // для насма важно существавание меток
@@ -549,6 +554,8 @@ void Asm_another(Arg_s)
 void embezzlement(Arg_s)    // присвоение, хищничество
 {
     DE_BUG(leaf);
+    
+// strdup delete + free no
 
     char* name = strdup(leaf->left->value.x);
 

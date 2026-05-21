@@ -1,5 +1,12 @@
 #include "emit_y.h"
 
+// структуру вместо файла звездочки 
+// с массивом и счетчиком и файлом 
+
+// set v buff
+
+// empitimia 
+
 
 //____________________________________________________BASE_OF_BYTES_______________________________________________________________________//
 void emit_byte(ar_get, FILE* bin_f, unsigned char byte)
@@ -21,13 +28,13 @@ void emit_4_byte(ar_get, FILE* bin_f, int fore_byte)
 void emit_push_reg(ar_get, FILE* bin_f, int reg) 
 {
     emit_byte(ast, bin_f, (unsigned char)(B_PUSH + reg));
-    fprintf(stderr, "push %s    ; rip = %d\n", translate_regs_en(reg), ast->cur_ip);
+    fprintf(stderr, "push %s    ; rip = %d\n\n", translate_regs_en(reg), ast->cur_ip);
 }
 
 void emit_pop_reg(ar_get, FILE* bin_f, int reg) 
 {
     emit_byte(ast, bin_f, (unsigned char)(B_POP + reg));
-    fprintf(stderr, "pop %s    ; rip = %d\n", translate_regs_en(reg), ast->cur_ip);
+    fprintf(stderr, "pop %s    ; rip = %d\n\n", translate_regs_en(reg), ast->cur_ip);
 }
 
 void emit_syscall(ar_get, FILE* bin_f)
@@ -35,7 +42,7 @@ void emit_syscall(ar_get, FILE* bin_f)
     emit_byte(ast, bin_f, 0x0F);
     emit_byte(ast, bin_f, 0x05);
 
-    fprintf(stderr, "syscall\n");
+    fprintf(stderr, "syscall\n\n");
 }
 //________________________________________________________________________________________________________________________________________//
 
@@ -50,9 +57,10 @@ void emit_mov_rax_rax(ar_get, FILE* bin_f, int reg_left_in, int reg_right_out)
     unsigned char regs = (unsigned char)(B_WORK_RR | (reg_right_out << 3) | reg_left_in);
     emit_byte(ast, bin_f, regs);
 
-    fprintf(stderr, "mov %s, %s     ; rip = %d\n", translate_regs_en(reg_left_in), translate_regs_en(reg_right_out), ast->cur_ip);
+    fprintf(stderr, "mov %s, %s     ; rip = %d\n\n", translate_regs_en(reg_left_in), translate_regs_en(reg_right_out), ast->cur_ip);
 }
 
+// TODO: reg !!! расширение туду
 
 void emit_mov_rax_num(ar_get, FILE* bin_f, int reg, int num)
 {
@@ -64,7 +72,7 @@ void emit_mov_rax_num(ar_get, FILE* bin_f, int reg, int num)
 
     emit_4_byte(ast, bin_f, num);
 
-    fprintf(stderr, "mov %s, %d     ; rip = %d\n", translate_regs_en(reg), num, ast->cur_ip);
+    fprintf(stderr, "mov %s, %d     ; rip = %d\n\n", translate_regs_en(reg), num, ast->cur_ip);
 }
 
 
@@ -79,7 +87,7 @@ void emit_mov_eax_mem_offset_swap(ar_get, FILE* bin_f, int reg, int m_offset, in
     //                              rbp + m_offset
     emit_byte(ast, bin_f, (unsigned char)m_offset);
 
-    fprintf(stderr, "mov %s, %d = offset     ; rip = %d\n", translate_regs_en(reg), m_offset, ast->cur_ip);
+    fprintf(stderr, "mov %s, %d = offset  MR/RM = %d   ; rip = %d\n\n", translate_regs_en(reg), m_offset, who_first, ast->cur_ip);
 }
 
 
@@ -95,7 +103,7 @@ void emit_mov_eax_mem_offset_swap_REL(ar_get, FILE* bin_f, int reg, const char* 
 
     emit_4_byte(ast, bin_f, m_offset);
 
-    fprintf(stderr, "mov %s, %d = rel     ; rip = %d\n", translate_regs_en(reg), m_offset, ast->cur_ip);
+    fprintf(stderr, "mov %s, %d = rel     ; rip = %d\n\n", translate_regs_en(reg), m_offset, ast->cur_ip);
 }
 //________________________________________________________________________________________________________________________________________//
 
